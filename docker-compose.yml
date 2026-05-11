@@ -23,7 +23,7 @@ services:
     container_name: taskflow-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3080:80"
     depends_on:
       - backend
     networks:
