@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestor de Tareas S&C Chile</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--bg4:#252530;
+  --border:#2e2e3e;--border2:#3a3a4e;
+  --text:#e8e8f0;--text2:#9090a8;--text3:#5a5a70;
+  --accent:#7c6af5;--accent2:#9b8cff;--accent-bg:rgba(124,106,245,0.12);
+  --alta:#f5576c;--alta-bg:rgba(245,87,108,0.12);
+  --media:#f5a623;--media-bg:rgba(245,166,35,0.12);
+  --baja:#4cd964;--baja-bg:rgba(76,217,100,0.12);
+  --info:#5ac8fa;--radius:10px;--radius-lg:14px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+
+/* ── Login ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:radial-gradient(ellipse at 30% 20%,rgba(124,106,245,0.08) 0%,transparent 60%)}
+.login-card{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo img{width:200px;max-width:80%}
+.login-title{font-size:18px;font-weight:600;margin-bottom:4px;text-align:center}
+.login-sub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:28px}
+.login-error{background:var(--alta-bg);border:1px solid var(--alta);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--alta);margin-bottom:16px;display:none}
+
+/* ── App Layout ── */
+#app-screen{display:none}
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{overflow-x:hidden;display:flex;flex-direction:column}
+.sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.sidebar-logo img{width:100%;max-width:180px;height:auto;display:block;filter:brightness(1.1)}
+.nav{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--text2);transition:all .15s;border-left:2px solid transparent;font-size:13.5px;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--accent2);background:var(--accent-bg);border-left-color:var(--accent)}
+.nav-item.hidden{display:none}
+.sidebar-user{padding:14px 18px;border-top:1px solid var(--border)}
+.sidebar-user-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user-role{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.sidebar-bottom{padding:12px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:13px;font-family:var(--font);transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--border2);color:var(--text);background:var(--bg4)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{background:var(--alta-bg);border-color:var(--alta);color:var(--alta)}
+.btn-danger:hover{background:var(--alta);color:#fff}
+.btn-ghost{background:none;border-color:transparent;color:var(--text3)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border)}
+
+/* ── Page Structure ── */
+.page{display:none;flex-direction:column;flex:1}
+.page.active{display:flex}
+.page-header{padding:24px 32px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0;flex-wrap:wrap;gap:12px}
+.page-title{font-size:19px;font-weight:600;letter-spacing:-0.4px}
+.page-subtitle{font-size:12px;color:var(--text3);margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.content{padding:24px 32px;flex:1;overflow-y:auto}
+#alert-container{flex-shrink:0}
+
+/* ── Alert banner ── */
+.alert-banner{background:rgba(245,87,108,0.1);border:1px solid rgba(245,87,108,0.3);border-radius:var(--radius);padding:11px 16px;margin:12px 32px 0;display:flex;align-items:center;gap:12px}
+.alert-banner .ab-text{flex:1;font-size:13px}
+.alert-banner .ab-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px}
+
+/* ── Stats ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.stat-num{font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;margin-bottom:4px}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── Today cards grid ── */
+.today-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.today-section-title{font-size:19px;font-weight:700;letter-spacing:-0.4px}
+.today-section-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.today-tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.today-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+.today-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+.today-card.alta::before{background:linear-gradient(90deg,var(--alta),#ff8fa3)}
+.today-card.media::before{background:linear-gradient(90deg,var(--media),#ffd06b)}
+.today-card.baja::before{background:linear-gradient(90deg,var(--baja),#a8f5b8)}
+.today-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.today-card.completada{opacity:.55}
+.today-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.today-card-name{font-size:15px;font-weight:600;letter-spacing:-.2px;line-height:1.35}
+.today-card-prio{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.today-card-prio.alta{background:var(--alta);box-shadow:0 0 6px var(--alta)}
+.today-card-prio.media{background:var(--media);box-shadow:0 0 6px var(--media)}
+.today-card-prio.baja{background:var(--baja);box-shadow:0 0 6px var(--baja)}
+.today-card-desc{font-size:12.5px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.today-card-owner{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.today-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)}
+.today-card-time{font-size:11.5px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:4px}
+
+/* ── Task list ── */
+.tasks-list{display:flex;flex-direction:column;gap:10px}
+.task-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;transition:all .15s;border-left:3px solid var(--border);cursor:pointer}
+.task-card:hover{border-color:var(--border2)}
+.task-card.alta{border-left-color:var(--alta)}
+.task-card.media{border-left-color:var(--media)}
+.task-card.baja{border-left-color:var(--baja)}
+.task-card.completada{opacity:.6}
+.task-name{font-size:14px;font-weight:500;margin-bottom:4px}
+.task-desc{font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5}
+.task-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono)}
+.badge-alta{background:var(--alta-bg);color:var(--alta)}
+.badge-media{background:var(--media-bg);color:var(--media)}
+.badge-baja{background:var(--baja-bg);color:var(--baja)}
+.badge-pendiente{background:rgba(90,200,250,.12);color:var(--info)}
+.badge-en_progreso{background:var(--accent-bg);color:var(--accent2)}
+.badge-completada{background:var(--baja-bg);color:var(--baja)}
+.badge-cancelada{background:rgba(200,200,200,.08);color:var(--text3)}
+.badge-admin{background:rgba(245,87,108,.12);color:var(--alta)}
+.badge-user{background:var(--accent-bg);color:var(--accent2)}
+.badge-viewer{background:rgba(90,200,250,.12);color:var(--info)}
+.task-time{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.task-multiday{font-size:10px;padding:2px 6px;background:rgba(124,106,245,.15);color:var(--accent2);border-radius:4px;font-family:var(--mono)}
+.task-owner{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.task-actions{display:flex;gap:6px;align-items:flex-start}
+.empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+.empty-state .icon{font-size:32px;margin-bottom:12px}
+.empty-state p{margin-bottom:16px}
+
+/* ── Calendar ── */
+.year-nav{display:flex;align-items:center;gap:12px}
+.year-label{font-size:20px;font-weight:600;letter-spacing:-.5px}
+.months-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.month-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .2s}
+.month-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.month-card.current-month{border-color:var(--accent)}
+.month-header{padding:11px 14px 8px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:1px solid var(--border)}
+.mini-cal{padding:8px}
+.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.mini-day-name{font-size:9px;color:var(--text3);text-align:center;padding:3px 0;font-family:var(--mono)}
+.mini-day{font-size:10px;text-align:center;padding:3px;border-radius:4px;color:var(--text3);min-height:20px;display:flex;align-items:center;justify-content:center;position:relative}
+.mini-day.has-task{color:var(--accent2);background:var(--accent-bg)}
+.mini-day.has-task.alta{color:var(--alta);background:var(--alta-bg)}
+.mini-day.today{background:var(--accent);color:#fff!important;font-weight:600}
+.mini-day.other-month{opacity:.2}
+
+/* ── Month View ── */
+.month-view-grid{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border);border-top:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.mv-day-name{background:var(--bg3);padding:8px;text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.mv-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:90px;padding:6px;background:var(--bg2);cursor:pointer;transition:background .1s;overflow:hidden}
+.mv-cell:hover{background:var(--bg3)}
+.mv-cell.today{background:var(--accent-bg)}
+.mv-cell.other-month{opacity:.35}
+.mv-cell .day-num{font-size:12px;font-weight:500;color:var(--text3);margin-bottom:4px;font-family:var(--mono)}
+.mv-cell.today .day-num{color:var(--accent2);font-weight:700}
+.mv-task-chip{font-size:10px;padding:2px 5px;border-radius:4px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block}
+.mv-task-chip.alta{background:var(--alta-bg);color:var(--alta)}
+.mv-task-chip.media{background:var(--media-bg);color:var(--media)}
+.mv-task-chip.baja{background:var(--baja-bg);color:var(--baja)}
+.mv-more{font-size:10px;color:var(--text3);padding:1px 4px}
+
+/* ── Users table ── */
+.users-table{width:100%;border-collapse:collapse}
+.users-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border);font-family:var(--mono)}
+.users-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.users-table tr:hover td{background:var(--bg3)}
+.users-table tr:last-child td{border-bottom:none}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--accent2);flex-shrink:0}
+
+/* ── Filter bar ── */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-input-wrap{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;min-width:200px}
+.search-input-wrap input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:13px;flex:1;outline:none;min-width:80px}
+.search-input-wrap input::placeholder{color:var(--text3)}
+
+/* ── User filter pills ── */
+.user-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.user-pill{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--mono)}
+.user-pill:hover{border-color:var(--border2);color:var(--text)}
+.user-pill.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent2)}
+
+/* ── Audit ── */
+.audit-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);align-items:start}
+.audit-action{font-size:11px;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-weight:500;white-space:nowrap}
+.audit-CREATE{background:var(--baja-bg);color:var(--baja)}
+.audit-UPDATE{background:var(--accent-bg);color:var(--accent2)}
+.audit-DELETE{background:var(--alta-bg);color:var(--alta)}
+.audit-LOGIN{background:rgba(90,200,250,.12);color:var(--info)}
+.audit-CREATE_USER{background:var(--baja-bg);color:var(--baja)}
+.audit-UPDATE_USER{background:var(--accent-bg);color:var(--accent2)}
+.audit-DELETE_USER{background:var(--alta-bg);color:var(--alta)}
+.audit-text{font-size:12px;color:var(--text2)}
+.audit-time{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap}
+
+/* ── Modal ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:540px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.modal-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px 6px;border-radius:6px}
+.modal-close:hover{color:var(--text);background:var(--bg3)}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ── Form ── */
+.form-group{margin-bottom:15px}
+.form-label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;letter-spacing:.3px}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13.5px;transition:border .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent);background:var(--bg4)}
+.form-select option{background:var(--bg3)}
+.form-textarea{resize:vertical;min-height:76px;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.form-error{font-size:12px;color:var(--alta);margin-top:4px;display:none}
+
+/* ── View selector ── */
+.view-toggle{display:flex;background:var(--bg3);border-radius:var(--radius);padding:2px;border:1px solid var(--border)}
+.view-btn{padding:5px 12px;border-radius:8px;border:none;background:none;color:var(--text3);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .15s}
+.view-btn.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+/* ── Day modal ── */
+#day-modal .modal{max-width:620px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/logo.png" alt="S&C Chile Capacitaciones">
+    </div>
+    <div class="login-title">Gestor de Tareas</div>
+    <div class="login-sub">Ingresa tus credenciales para continuar</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label class="form-label">Correo electrónico</label>
+      <input class="form-input" type="email" id="login-email" placeholder="tu@email.com" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()" id="login-btn">Ingresar</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP SCREEN
+══════════════════════════════════════════ -->
+<div id="app-screen">
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="/logo.png" alt="S&C Chile">
+    </div>
+    <nav class="nav" id="main-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('calendar')" id="nav-calendar">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="12" rx="2"/><path d="M1 7h14M5 1v4M11 1v4"/></svg>
+        Calendario Anual
+      </div>
+      <div class="nav-item" onclick="showPage('month')" id="nav-month">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="12" rx="2"/><path d="M1 7h14M5 1v4M11 1v4M4 10h2M7 10h2M10 10h2"/></svg>
+        Vista Mensual
+      </div>
+      <div class="nav-item" onclick="showPage('tasks')" id="nav-tasks">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
+        Todas las Tareas
+      </div>
+      <div class="nav-item hidden" onclick="showPage('users')" id="nav-users">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 3c1.5.5 2.5 1.8 2.5 3.5S12.5 9.5 11 10"/><path d="M13 11c1.5.5 2.5 1.5 2.5 3"/></svg>
+        Usuarios
+      </div>
+      <div class="nav-item hidden" onclick="showPage('audit')" id="nav-audit">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12v12H2z"/><path d="M5 5h6M5 8h6M5 11h3"/></svg>
+        Auditoría
+      </div>
+    </nav>
+    <div class="sidebar-user" id="sidebar-user-info">
+      <div class="sidebar-user-name" id="sidebar-name">—</div>
+      <div class="sidebar-user-role" id="sidebar-role">—</div>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="showChangePassword()">🔑 Cambiar contraseña</button>
+      <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="exportExcel()">📊 Exportar Excel</button>
+      <button class="btn btn-danger btn-sm" style="justify-content:center" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main" id="main-content">
+    <div id="alert-container"></div>
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle" id="today-label">—</div>
+        </div>
+        <div class="header-actions" id="dash-header-actions"></div>
+      </div>
+      <div class="content">
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total Tareas</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-pending" style="color:var(--info)">—</div><div class="stat-label">Pendientes</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-inprogress" style="color:var(--accent2)">—</div><div class="stat-label">En Progreso</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-done" style="color:var(--baja)">—</div><div class="stat-label">Completadas</div></div>
+        </div>
+        <div class="today-section-header">
+          <div>
+            <div class="today-section-title">Tareas de Hoy</div>
+            <div class="today-section-sub" id="today-count"></div>
+          </div>
+          <div id="dash-add-btn"></div>
+        </div>
+        <div id="today-tasks" class="today-tasks-grid"></div>
+      </div>
+    </div>
+
+    <!-- Calendario Anual -->
+    <div class="page" id="page-calendar">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Calendario Anual</div>
+          <div class="page-subtitle">Vista general del año</div>
+        </div>
+        <div class="header-actions">
+          <div class="year-nav">
+            <button class="btn btn-sm" onclick="changeYear(-1)">‹</button>
+            <span class="year-label" id="cal-year">—</span>
+            <button class="btn btn-sm" onclick="changeYear(1)">›</button>
+          </div>
+          <div id="cal-user-filter-wrap" style="display:none">
+            <select class="form-select" style="width:180px" id="cal-user-filter" onchange="renderAnnualCalendar()">
+              <option value="">Todos los usuarios</option>
+            </select>
+          </div>
+          <div id="cal-add-btn"></div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="months-grid" id="months-grid"></div>
+      </div>
+    </div>
+
+    <!-- Vista Mensual -->
+    <div class="page" id="page-month">
+      <div class="page-header">
+        <div>
+          <div class="page-title" id="month-title">—</div>
+          <div class="page-subtitle">Vista mensual detallada</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-sm" onclick="changeMonth(-1)">‹</button>
+          <button class="btn btn-sm" onclick="changeMonth(1)">›</button>
+          <div id="month-user-filter-wrap" style="display:none">
+            <select class="form-select" style="width:160px" id="month-user-filter" onchange="renderMonthView()">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div id="month-add-btn"></div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="month-view-grid" id="month-view-grid"></div>
+      </div>
+    </div>
+
+    <!-- Todas las Tareas -->
+    <div class="page" id="page-tasks">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Todas las Tareas</div>
+          <div class="page-subtitle" id="tasks-subtitle">—</div>
+        </div>
+        <div class="header-actions">
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3);flex-shrink:0"><circle cx="6" cy="6" r="4"/><path d="M10 10l3 3"/></svg>
+              <input id="search-input" placeholder="Buscar..." oninput="filterTasks()">
+            </div>
+            <select class="form-select" style="width:120px" id="filter-priority" onchange="filterTasks()">
+              <option value="">Prioridad</option>
+              <option value="alta">Alta</option>
+              <option value="media">Media</option>
+              <option value="baja">Baja</option>
+            </select>
+            <select class="form-select" style="width:130px" id="filter-status" onchange="filterTasks()">
+              <option value="">Estado</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="en_progreso">En Progreso</option>
+              <option value="completada">Completada</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+          <div id="tasks-add-btn"></div>
+        </div>
+      </div>
+      <div class="content">
+        <div id="tasks-user-pills" class="user-pills" style="display:none"></div>
+        <div id="all-tasks-list" class="tasks-list"></div>
+      </div>
+    </div>
+
+    <!-- Usuarios -->
+    <div class="page" id="page-users">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Gestión de Usuarios</div>
+          <div class="page-subtitle">Solo visible para administradores</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="openNewUserModal()">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>
+            Nuevo Usuario
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="users-list"></div>
+      </div>
+    </div>
+
+    <!-- Auditoría -->
+    <div class="page" id="page-audit">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Registro de Auditoría</div>
+          <div class="page-subtitle">Historial completo de acciones</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-sm" onclick="loadAudit()">↺ Actualizar</button>
+        </div>
+      </div>
+      <div class="content"><div id="audit-list"></div></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+</div><!-- /app-screen -->
+
+<!-- Day Modal -->
+<div class="modal-backdrop" id="day-modal" style="display:none" onclick="if(event.target===this)closeDayModal()">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title" id="day-modal-title">Tareas del día</span>
+      <button class="modal-close" onclick="closeDayModal()">×</button>
+    </div>
+    <div class="modal-body"><div id="day-modal-tasks"></div></div>
+    <div class="modal-footer">
+      <div id="day-modal-add-btn"></div>
+      <button class="btn" onclick="closeDayModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-backdrop" id="task-modal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="task-modal-title">Nueva Tarea</span>
+      <button class="modal-close" onclick="closeTaskModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="task-id">
+      <div class="form-group">
+        <label class="form-label">Nombre *</label>
+        <input class="form-input" id="task-name" placeholder="¿En qué vas a trabajar?">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-textarea" id="task-desc" placeholder="Descripción detallada..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha inicio *</label>
+          <input class="form-input" type="date" id="task-start-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha término *</label>
+          <input class="form-input" type="date" id="task-end-date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hora inicio</label>
+          <input class="form-input" type="time" id="task-start-time">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora término</label>
+          <input class="form-input" type="time" id="task-end-time">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select class="form-select" id="task-priority">
+            <option value="alta">🔴 Alta</option>
+            <option value="media" selected>🟡 Media</option>
+            <option value="baja">🟢 Baja</option>
+          </select>
+        </div>
+        <div class="form-group" id="status-group" style="display:none">
+          <label class="form-label">Estado</label>
+          <select class="form-select" id="task-status">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_progreso">En Progreso</option>
+            <option value="completada">Completada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="assign-user-group" style="display:none">
+        <label class="form-label">Asignar a usuario</label>
+        <select class="form-select" id="task-user-id"></select>
+      </div>
+      <div class="form-hint">⏰ Alerta automática 1 día antes del vencimiento</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="delete-task-btn" style="display:none;margin-right:auto" onclick="deleteTask()">Eliminar</button>
+      <button class="btn" onclick="closeTaskModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTask()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal-backdrop" id="user-modal" style="display:none" onclick="if(event.target===this)closeUserModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="user-modal-title">Nuevo Usuario</span>
+      <button class="modal-close" onclick="closeUserModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="user-id">
+      <div id="user-modal-error" class="login-error" style="display:none"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">RUT *</label>
+          <input class="form-input" id="user-rut" placeholder="12345678-9">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol *</label>
+          <select class="form-select" id="user-role">
+            <option value="user">👤 Usuario</option>
+            <option value="viewer">👁 Visualizador</option>
+            <option value="admin">⚡ Administrador</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre completo *</label>
+        <input class="form-input" id="user-name" placeholder="Nombre Apellido">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" id="user-phone" placeholder="+56912345678">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input class="form-input" type="email" id="user-email" placeholder="correo@empresa.cl">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="pass-label">Contraseña * (mín. 8 caracteres)</label>
+        <input class="form-input" type="password" id="user-pass" placeholder="••••••••" autocomplete="new-password">
+        <div class="form-hint" id="pass-hint" style="display:none">Dejar en blanco para mantener la contraseña actual</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="delete-user-btn" style="display:none;margin-right:auto" onclick="deleteUser()">Eliminar usuario</button>
+      <button class="btn" onclick="closeUserModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-backdrop" id="chpass-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Cambiar Contraseña</span>
+      <button class="modal-close" onclick="document.getElementById('chpass-modal').style.display='none'">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="chpass-error" class="login-error" style="display:none"></div>
+      <div id="chpass-success" style="display:none;background:var(--baja-bg);border:1px solid var(--baja);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--baja);margin-bottom:14px">Contraseña actualizada correctamente</div>
+      <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="chpass-current" autocomplete="current-password"></div>
+      <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="chpass-new" autocomplete="new-password"></div>
+      <div class="form-group"><label class="form-label">Confirmar nueva contraseña</label><input class="form-input" type="password" id="chpass-confirm" autocomplete="new-password"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('chpass-modal').style.display='none'">Cancelar</button>
+      <button class="btn btn-primary" onclick="changePassword()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS_SHORT = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+
+let currentYear = today.getFullYear();
+let currentMonth = today.getMonth();
+let allTasks = [];
+let allUsers = [];
+let currentUser = null;
+let token = null;
+let selectedDay = null;
+let editingTaskId = null;
+let editingUserId = null;
+let activeUserFilter = '';
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  btn.textContent = 'Ingresando...'; btn.disabled = true;
+  try {
+    const r = await fetch(API + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.error || 'Error al ingresar'; errEl.style.display='block'; return; }
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('syc_token', token);
+    startApp();
+  } catch(e) {
+    errEl.textContent = 'Error de conexión con el servidor'; errEl.style.display='block';
+  } finally { btn.textContent = 'Ingresar'; btn.disabled = false; }
+}
+
+async function tryAutoLogin() {
+  const saved = localStorage.getItem('syc_token');
+  if (!saved) return false;
+  try {
+    const r = await fetch(API + '/auth/me', { headers:{'Authorization':'Bearer '+saved} });
+    if (!r.ok) { localStorage.removeItem('syc_token'); return false; }
+    token = saved; currentUser = await r.json(); return true;
+  } catch { return false; }
+}
+
+function doLogout() {
+  localStorage.removeItem('syc_token');
+  token = null; currentUser = null; allUsers = [];
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+async function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  // Sidebar user info
+  document.getElementById('sidebar-name').textContent = currentUser.full_name;
+  document.getElementById('sidebar-role').textContent = {admin:'⚡ Administrador', user:'👤 Usuario', viewer:'👁 Visualizador'}[currentUser.role] || currentUser.role;
+  // Show/hide nav items
+  if (currentUser.role === 'admin') {
+    document.getElementById('nav-users').classList.remove('hidden');
+    document.getElementById('nav-audit').classList.remove('hidden');
+  }
+  // Load users list (needed for filters)
+  await loadUsers();
+  loadDashboard();
+}
+
+// ── API helper ────────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const headers = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
+  const r = await fetch(API + path, { ...opts, headers: { ...headers, ...(opts.headers||{}) } });
+  if (r.status === 401) { doLogout(); return null; }
+  return r.json();
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  if (page === 'calendar') renderAnnualCalendar();
+  if (page === 'month') renderMonthView();
+  if (page === 'tasks') loadAllTasks();
+  if (page === 'users') loadUsersPage();
+  if (page === 'audit') loadAudit();
+  if (page === 'dashboard') loadDashboard();
+}
+
+const canWrite = () => currentUser?.role !== 'viewer';
+const isAdmin  = () => currentUser?.role === 'admin';
+
+function addBtn(containerId, dateStr) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (canWrite()) {
+    el.innerHTML = `<button class="btn btn-primary" onclick="openNewTaskModal(${dateStr?`'${dateStr}'`:''})">\
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>Nueva Tarea</button>`;
+  } else { el.innerHTML = ''; }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('today-label').textContent = today.toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  addBtn('dash-add-btn');
+  if (canWrite()) {
+    document.getElementById('dash-add-btn').innerHTML += '';
+  }
+  document.getElementById('dash-add-btn').innerHTML = canWrite()
+    ? `<button class="btn btn-primary" onclick="openNewTaskModal()"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>Nueva Tarea</button>` : '';
+
+  const tasks = await apiFetch('/tasks'); if (!tasks) return;
+  allTasks = tasks;
+  document.getElementById('stat-total').textContent = tasks.length;
+  document.getElementById('stat-pending').textContent = tasks.filter(t=>t.status==='pendiente').length;
+  document.getElementById('stat-inprogress').textContent = tasks.filter(t=>t.status==='en_progreso').length;
+  document.getElementById('stat-done').textContent = tasks.filter(t=>t.status==='completada').length;
+
+  const todayTasks = tasks.filter(t => t.start_date <= todayStr && t.end_date >= todayStr);
+  document.getElementById('today-count').textContent = todayTasks.length === 0 ? 'Sin tareas hoy' : todayTasks.length === 1 ? '1 tarea programada' : `${todayTasks.length} tareas programadas`;
+  renderTodayCards(document.getElementById('today-tasks'), todayTasks);
+  checkAlerts(tasks);
+}
+
+async function checkAlerts() {
+  const alerts = await apiFetch('/tasks/alerts/pending'); if (!alerts) return;
+  const container = document.getElementById('alert-container');
+  container.innerHTML = '';
+  alerts.forEach(t => {
+    const d = document.createElement('div'); d.className = 'alert-banner';
+    d.innerHTML = `<span>⚠️</span><span class="ab-text"><strong>Alerta:</strong> La tarea "<strong>${escH(t.name)}</strong>"${isAdmin()&&t.user_name?' ('+escH(t.user_name)+')'  :''} vence mañana.</span><button class="ab-close" onclick="this.parentElement.remove()">×</button>`;
+    container.appendChild(d);
+  });
+}
+
+// ── Today Cards ───────────────────────────────────────────────────────────────
+function renderTodayCards(container, tasks) {
+  if (!tasks.length) {
+    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">✨</div><p>No hay tareas para hoy</p>${canWrite()?'<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>':''}</div>`;
+    return;
+  }
+  const prioOrder = {alta:0,media:1,baja:2};
+  const sorted = [...tasks].sort((a,b) => (prioOrder[a.priority]??9)-(prioOrder[b.priority]??9));
+  container.innerHTML = sorted.map(t => {
+    const isMulti = t.start_date !== t.end_date;
+    const timeStr = t.start_time ? `🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}` : (isMulti?`📅 hasta ${t.end_date}`:'Sin hora');
+    const nextSt = nextStatus(t.status);
+    const nextLabel = {pendiente:'Iniciar',en_progreso:'Completar',completada:'Reabrir',cancelada:'Reabrir'}[t.status]||'→';
+    return `<div class="today-card ${t.priority} ${t.status}" onclick="openEditModal(${t.id})">
+      <div class="today-card-header">
+        <div class="today-card-name">${escH(t.name)}</div>
+        <div class="today-card-prio ${t.priority}"></div>
+      </div>
+      ${t.description?`<div class="today-card-desc">${escH(t.description)}</div>`:''}
+      ${(isAdmin()||currentUser.role==='viewer')&&t.user_name?`<div class="today-card-owner">👤 ${escH(t.user_name)}</div>`:''}
+      <div class="today-card-footer">
+        <span class="today-card-time">${timeStr}</span>
+        <div style="display:flex;gap:5px;align-items:center">
+          <span class="badge badge-${t.status}">${statusLabel(t.status)}</span>
+          ${canWrite()?`<button class="btn btn-sm" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();quickStatus(${t.id},'${nextSt}')">${nextLabel}</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Tasks List ────────────────────────────────────────────────────────────────
+function renderTasksList(container, tasks) {
+  if (!tasks.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No hay tareas</p>${canWrite()?'<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>':''}</div>`;
+    return;
+  }
+  container.innerHTML = tasks.map(t => {
+    const isMulti = t.start_date !== t.end_date;
+    const timeStr = t.start_time ? `🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}` : '';
+    return `<div class="task-card ${t.priority} ${t.status}" onclick="openEditModal(${t.id})">
+      <div>
+        <div class="task-name">${escH(t.name)}</div>
+        ${t.description?`<div class="task-desc">${escH(t.description)}</div>`:''}
+        <div class="task-meta">
+          <span class="badge badge-${t.priority}">${t.priority.charAt(0).toUpperCase()+t.priority.slice(1)}</span>
+          <span class="badge badge-${t.status}">${statusLabel(t.status)}</span>
+          ${timeStr?`<span class="task-time">${timeStr}</span>`:''}
+          ${isMulti?`<span class="task-multiday">${t.start_date} → ${t.end_date}</span>`:`<span class="task-time">${t.start_date}</span>`}
+          ${(isAdmin()||currentUser.role==='viewer')&&t.user_name?`<span class="task-owner">👤 ${escH(t.user_name)}</span>`:''}
+        </div>
+      </div>
+      ${canWrite()?`<div class="task-actions"><button class="btn btn-sm" onclick="event.stopPropagation();quickStatus(${t.id},'${nextStatus(t.status)}')" title="Avanzar estado">→</button></div>`:'<div></div>'}
+    </div>`;
+  }).join('');
+}
+
+async function loadAllTasks() {
+  document.getElementById('tasks-subtitle').textContent = isAdmin() ? 'Todas las tareas del sistema' : 'Tus tareas';
+  document.getElementById('tasks-add-btn').innerHTML = canWrite()
+    ? `<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>` : '';
+
+  const pillsEl = document.getElementById('tasks-user-pills');
+  if (isAdmin() && allUsers.length) {
+    pillsEl.style.display = 'flex';
+    pillsEl.innerHTML = `<span class="user-pill ${activeUserFilter===''?'active':''}" onclick="setTaskUserFilter('')">Todos</span>`
+      + allUsers.map(u => `<span class="user-pill ${activeUserFilter==u.id?'active':''}" onclick="setTaskUserFilter(${u.id})">${escH(u.full_name)}</span>`).join('');
+  } else { pillsEl.style.display = 'none'; }
+
+  const q = activeUserFilter ? `?user_id=${activeUserFilter}` : '';
+  allTasks = await apiFetch('/tasks'+q) || [];
+  filterTasks();
+}
+
+function setTaskUserFilter(uid) {
+  activeUserFilter = uid;
+  loadAllTasks();
+}
+
+function filterTasks() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const prio = document.getElementById('filter-priority').value;
+  const status = document.getElementById('filter-status').value;
+  const filtered = allTasks.filter(t => {
+    if (q && !t.name.toLowerCase().includes(q) && !(t.description||'').toLowerCase().includes(q)) return false;
+    if (prio && t.priority !== prio) return false;
+    if (status && t.status !== status) return false;
+    return true;
+  });
+  renderTasksList(document.getElementById('all-tasks-list'), filtered);
+}
+
+async function quickStatus(id, newStatus) {
+  await apiFetch('/tasks/'+id, {method:'PUT', body:JSON.stringify({status:newStatus})});
+  loadDashboard();
+  if (document.getElementById('page-tasks').classList.contains('active')) loadAllTasks();
+}
+
+// ── Annual Calendar ───────────────────────────────────────────────────────────
+async function renderAnnualCalendar() {
+  document.getElementById('cal-year').textContent = currentYear;
+  document.getElementById('cal-add-btn').innerHTML = canWrite()
+    ? `<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>` : '';
+
+  const filterWrap = document.getElementById('cal-user-filter-wrap');
+  if (isAdmin() && allUsers.length) {
+    filterWrap.style.display = 'block';
+    const sel = document.getElementById('cal-user-filter');
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">Todos los usuarios</option>`
+      + allUsers.map(u => `<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+  }
+
+  const uid = document.getElementById('cal-user-filter').value;
+  const q = uid ? `?year=${currentYear}&user_id=${uid}` : `?year=${currentYear}`;
+  const tasks = await apiFetch('/tasks'+q) || [];
+  const byDate = buildDateIndex(tasks);
+  const grid = document.getElementById('months-grid');
+  grid.innerHTML = '';
+  for (let m = 0; m < 12; m++) grid.appendChild(buildMiniMonth(m, currentYear, byDate));
+}
+
+function buildDateIndex(tasks) {
+  const idx = {};
+  tasks.forEach(t => {
+    const start = new Date(t.start_date+'T12:00:00');
+    const end = new Date(t.end_date+'T12:00:00');
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+      const k = d.toISOString().split('T')[0];
+      if (!idx[k]) idx[k] = [];
+      idx[k].push(t);
+    }
+  });
+  return idx;
+}
+
+function buildMiniMonth(month, year, byDate) {
+  const card = document.createElement('div');
+  const isCurrent = month === today.getMonth() && year === today.getFullYear();
+  card.className = 'month-card' + (isCurrent?' current-month':'');
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month+1, 0);
+  let startDow = (firstDay.getDay()+6)%7;
+  let html = `<div class="month-header">${MONTHS[month]}</div><div class="mini-cal"><div class="mini-cal-grid">`;
+  DAYS_SHORT.forEach(d => html += `<div class="mini-day-name">${d}</div>`);
+  for (let i = 0; i < startDow; i++) html += '<div class="mini-day other-month"></div>';
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt = byDate[ds] || [];
+    const isToday = ds === todayStr;
+    const maxP = dt.find(t=>t.priority==='alta') ? 'alta' : dt.length ? dt[0].priority : '';
+    const cls = isToday ? 'today' : dt.length ? `has-task ${maxP}` : '';
+    html += `<div class="mini-day ${cls}" onclick="openDayModal('${ds}','${MONTHS[month]} ${d}, ${year}')" title="${dt.length} tarea(s)">${d}</div>`;
+  }
+  html += '</div></div>';
+  card.innerHTML = html;
+  card.querySelector('.month-header').onclick = () => { currentMonth = month; showPage('month'); };
+  return card;
+}
+
+function changeYear(d) { currentYear += d; renderAnnualCalendar(); }
+
+// ── Month View ────────────────────────────────────────────────────────────────
+async function renderMonthView() {
+  document.getElementById('month-title').textContent = MONTHS[currentMonth] + ' ' + currentYear;
+  document.getElementById('month-add-btn').innerHTML = canWrite()
+    ? `<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>` : '';
+
+  const mFilterWrap = document.getElementById('month-user-filter-wrap');
+  if (isAdmin() && allUsers.length) {
+    mFilterWrap.style.display = 'block';
+    const sel = document.getElementById('month-user-filter');
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">Todos</option>`
+      + allUsers.map(u => `<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+  }
+
+  const uid = document.getElementById('month-user-filter').value;
+  const q = uid ? `?year=${currentYear}&user_id=${uid}` : `?year=${currentYear}`;
+  const tasks = await apiFetch('/tasks'+q) || [];
+  const byDate = buildDateIndex(tasks);
+  const grid = document.getElementById('month-view-grid');
+  let html = '';
+  DAYS_SHORT.forEach(d => html += `<div class="mv-day-name">${d}</div>`);
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth+1, 0);
+  let startDow = (firstDay.getDay()+6)%7;
+  for (let i = 0; i < startDow; i++) html += '<div class="mv-cell other-month"></div>';
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const ds = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt = byDate[ds] || [];
+    const isToday = ds === todayStr;
+    const chips = dt.slice(0,3).map(t =>
+      `<span class="mv-task-chip ${t.priority}" onclick="event.stopPropagation();openEditModal(${t.id})" title="${escH(t.name)}">${escH(t.name)}</span>`).join('');
+    const more = dt.length > 3 ? `<div class="mv-more">+${dt.length-3} más</div>` : '';
+    html += `<div class="mv-cell${isToday?' today':''}" onclick="openDayModal('${ds}','${MONTHS[currentMonth]} ${d}, ${currentYear}')">
+      <div class="day-num">${d}</div>${chips}${more}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function changeMonth(d) {
+  currentMonth += d;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderMonthView();
+}
+
+// ── Day Modal ─────────────────────────────────────────────────────────────────
+async function openDayModal(dateStr, label) {
+  selectedDay = dateStr;
+  document.getElementById('day-modal-title').textContent = '📅 ' + label;
+  const tasks = await apiFetch('/tasks?date='+dateStr) || [];
+  const cont = document.getElementById('day-modal-tasks');
+  if (!tasks.length) cont.innerHTML = `<div class="empty-state" style="padding:24px"><p>No hay tareas para este día</p></div>`;
+  else renderTasksList(cont, tasks);
+  document.getElementById('day-modal-add-btn').innerHTML = canWrite()
+    ? `<button class="btn btn-primary" onclick="openNewTaskModalForDay()">+ Nueva tarea este día</button>` : '';
+  document.getElementById('day-modal').style.display = 'flex';
+}
+function closeDayModal() { document.getElementById('day-modal').style.display='none'; selectedDay=null; }
+function openNewTaskModalForDay() { closeDayModal(); openNewTaskModal(selectedDay); }
+
+// ── Users Page ────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  allUsers = await apiFetch('/users') || [];
+  return allUsers;
+}
+
+async function loadUsersPage() {
+  await loadUsers();
+  const container = document.getElementById('users-list');
+  if (!allUsers.length) { container.innerHTML = '<div class="empty-state"><p>No hay usuarios</p></div>'; return; }
+  container.innerHTML = `<table class="users-table">
+    <thead><tr><th></th><th>RUT</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${allUsers.map(u => `<tr>
+      <td><div class="user-avatar">${u.full_name.charAt(0).toUpperCase()}</div></td>
+      <td style="font-family:var(--mono);font-size:12px">${escH(u.rut)}</td>
+      <td style="font-weight:500">${escH(u.full_name)}</td>
+      <td style="color:var(--text2)">${escH(u.phone||'—')}</td>
+      <td style="color:var(--text2)">${escH(u.email)}</td>
+      <td><span class="badge badge-${u.role}">${{admin:'⚡ Admin',user:'👤 Usuario',viewer:'👁 Viewer'}[u.role]||u.role}</span></td>
+      <td><span class="badge" style="${u.active?'background:var(--baja-bg);color:var(--baja)':'background:var(--alta-bg);color:var(--alta)'}">${u.active?'Activo':'Inactivo'}</span></td>
+      <td><button class="btn btn-sm btn-ghost" onclick="openEditUserModal(${u.id})">Editar</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function openNewUserModal() {
+  editingUserId = null;
+  document.getElementById('user-modal-title').textContent = 'Nuevo Usuario';
+  document.getElementById('user-id').value = '';
+  document.getElementById('user-rut').value = '';
+  document.getElementById('user-name').value = '';
+  document.getElementById('user-phone').value = '';
+  document.getElementById('user-email').value = '';
+  document.getElementById('user-pass').value = '';
+  document.getElementById('user-role').value = 'user';
+  document.getElementById('delete-user-btn').style.display = 'none';
+  document.getElementById('pass-label').textContent = 'Contraseña * (mín. 8 caracteres)';
+  document.getElementById('pass-hint').style.display = 'none';
+  document.getElementById('user-modal-error').style.display = 'none';
+  document.getElementById('user-modal').style.display = 'flex';
+}
+
+async function openEditUserModal(id) {
+  editingUserId = id;
+  const u = allUsers.find(u=>u.id===id) || await apiFetch('/users/'+id);
+  if (!u) return;
+  document.getElementById('user-modal-title').textContent = 'Editar Usuario';
+  document.getElementById('user-id').value = u.id;
+  document.getElementById('user-rut').value = u.rut;
+  document.getElementById('user-name').value = u.full_name;
+  document.getElementById('user-phone').value = u.phone||'';
+  document.getElementById('user-email').value = u.email;
+  document.getElementById('user-pass').value = '';
+  document.getElementById('user-role').value = u.role;
+  document.getElementById('delete-user-btn').style.display = u.id === currentUser.id ? 'none' : 'inline-flex';
+  document.getElementById('pass-label').textContent = 'Nueva contraseña';
+  document.getElementById('pass-hint').style.display = 'block';
+  document.getElementById('user-modal-error').style.display = 'none';
+  document.getElementById('user-modal').style.display = 'flex';
+}
+
+function closeUserModal() { document.getElementById('user-modal').style.display='none'; editingUserId=null; }
+
+async function saveUser() {
+  const errEl = document.getElementById('user-modal-error');
+  errEl.style.display = 'none';
+  const payload = {
+    rut: document.getElementById('user-rut').value.trim(),
+    full_name: document.getElementById('user-name').value.trim(),
+    phone: document.getElementById('user-phone').value.trim(),
+    email: document.getElementById('user-email').value.trim(),
+    role: document.getElementById('user-role').value,
+    password: document.getElementById('user-pass').value || undefined
+  };
+  if (!payload.rut || !payload.full_name || !payload.email) {
+    errEl.textContent = 'RUT, nombre y email son requeridos'; errEl.style.display='block'; return;
+  }
+  if (!editingUserId && !payload.password) {
+    errEl.textContent = 'La contraseña es requerida para nuevos usuarios'; errEl.style.display='block'; return;
+  }
+  const url = editingUserId ? '/users/'+editingUserId : '/users';
+  const method = editingUserId ? 'PUT' : 'POST';
+  const data = await apiFetch(url, { method, body: JSON.stringify(payload) });
+  if (!data) return;
+  if (data.error) { errEl.textContent = data.error; errEl.style.display='block'; return; }
+  closeUserModal();
+  loadUsersPage();
+}
+
+async function deleteUser() {
+  if (!editingUserId || !confirm('¿Eliminar este usuario? Sus tareas permanecerán en el sistema.')) return;
+  const data = await apiFetch('/users/'+editingUserId, { method:'DELETE' });
+  if (data?.error) { document.getElementById('user-modal-error').textContent=data.error; document.getElementById('user-modal-error').style.display='block'; return; }
+  closeUserModal();
+  loadUsersPage();
+}
+
+// ── Task Modal ────────────────────────────────────────────────────────────────
+async function openNewTaskModal(dateStr) {
+  editingTaskId = null;
+  document.getElementById('task-modal-title').textContent = 'Nueva Tarea';
+  document.getElementById('task-id').value = '';
+  document.getElementById('task-name').value = '';
+  document.getElementById('task-desc').value = '';
+  document.getElementById('task-start-date').value = dateStr || todayStr;
+  document.getElementById('task-end-date').value = dateStr || todayStr;
+  document.getElementById('task-start-time').value = '';
+  document.getElementById('task-end-time').value = '';
+  document.getElementById('task-priority').value = 'media';
+  document.getElementById('status-group').style.display = 'none';
+  document.getElementById('delete-task-btn').style.display = 'none';
+
+  const ag = document.getElementById('assign-user-group');
+  if (isAdmin() && allUsers.length) {
+    ag.style.display = 'block';
+    document.getElementById('task-user-id').innerHTML = allUsers.map(u =>
+      `<option value="${u.id}" ${u.id===currentUser.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+  } else { ag.style.display = 'none'; }
+
+  document.getElementById('task-modal').style.display = 'flex';
+}
+
+async function openEditModal(id) {
+  editingTaskId = id;
+  const t = await apiFetch('/tasks/'+id); if (!t) return;
+  document.getElementById('task-modal-title').textContent = 'Editar Tarea';
+  document.getElementById('task-id').value = t.id;
+  document.getElementById('task-name').value = t.name;
+  document.getElementById('task-desc').value = t.description||'';
+  document.getElementById('task-start-date').value = t.start_date;
+  document.getElementById('task-end-date').value = t.end_date;
+  document.getElementById('task-start-time').value = t.start_time||'';
+  document.getElementById('task-end-time').value = t.end_time||'';
+  document.getElementById('task-priority').value = t.priority;
+  document.getElementById('task-status').value = t.status;
+  document.getElementById('status-group').style.display = canWrite() ? 'block' : 'none';
+  document.getElementById('delete-task-btn').style.display = isAdmin() ? 'inline-flex' : 'none';
+
+  const ag = document.getElementById('assign-user-group');
+  if (isAdmin() && allUsers.length) {
+    ag.style.display = 'block';
+    document.getElementById('task-user-id').innerHTML = allUsers.map(u =>
+      `<option value="${u.id}" ${u.id===t.user_id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+  } else { ag.style.display = 'none'; }
+
+  document.getElementById('task-modal').style.display = 'flex';
+}
+
+function closeTaskModal() { document.getElementById('task-modal').style.display='none'; editingTaskId=null; }
+
+async function saveTask() {
+  if (!canWrite()) return;
+  const name = document.getElementById('task-name').value.trim();
+  const start_date = document.getElementById('task-start-date').value;
+  const end_date = document.getElementById('task-end-date').value;
+  if (!name || !start_date || !end_date) { alert('Nombre y fechas son requeridos'); return; }
+  if (end_date < start_date) { alert('Fecha término no puede ser anterior a inicio'); return; }
+  const payload = {
+    name, description: document.getElementById('task-desc').value,
+    start_date, end_date,
+    start_time: document.getElementById('task-start-time').value||null,
+    end_time: document.getElementById('task-end-time').value||null,
+    priority: document.getElementById('task-priority').value,
+    status: document.getElementById('task-status').value||'pendiente',
+    user_id: isAdmin() ? parseInt(document.getElementById('task-user-id').value)||undefined : undefined
+  };
+  const url = editingTaskId ? '/tasks/'+editingTaskId : '/tasks';
+  const method = editingTaskId ? 'PUT' : 'POST';
+  await apiFetch(url, { method, body: JSON.stringify(payload) });
+  closeTaskModal();
+  loadDashboard();
+  if (document.getElementById('page-tasks').classList.contains('active')) loadAllTasks();
+  if (document.getElementById('page-calendar').classList.contains('active')) renderAnnualCalendar();
+  if (document.getElementById('page-month').classList.contains('active')) renderMonthView();
+}
+
+async function deleteTask() {
+  if (!isAdmin() || !editingTaskId || !confirm('¿Eliminar esta tarea?')) return;
+  await apiFetch('/tasks/'+editingTaskId, { method:'DELETE' });
+  closeTaskModal();
+  loadDashboard();
+  if (document.getElementById('page-tasks').classList.contains('active')) loadAllTasks();
+}
+
+// ── Change Password ───────────────────────────────────────────────────────────
+function showChangePassword() {
+  document.getElementById('chpass-current').value = '';
+  document.getElementById('chpass-new').value = '';
+  document.getElementById('chpass-confirm').value = '';
+  document.getElementById('chpass-error').style.display = 'none';
+  document.getElementById('chpass-success').style.display = 'none';
+  document.getElementById('chpass-modal').style.display = 'flex';
+}
+async function changePassword() {
+  const curr = document.getElementById('chpass-current').value;
+  const nw = document.getElementById('chpass-new').value;
+  const conf = document.getElementById('chpass-confirm').value;
+  const errEl = document.getElementById('chpass-error');
+  errEl.style.display = 'none';
+  document.getElementById('chpass-success').style.display = 'none';
+  if (nw !== conf) { errEl.textContent = 'Las contraseñas no coinciden'; errEl.style.display='block'; return; }
+  if (nw.length < 8) { errEl.textContent = 'Mínimo 8 caracteres'; errEl.style.display='block'; return; }
+  const data = await apiFetch('/auth/change-password', { method:'POST', body:JSON.stringify({current_password:curr,new_password:nw}) });
+  if (data?.error) { errEl.textContent = data.error; errEl.style.display='block'; return; }
+  document.getElementById('chpass-success').style.display = 'block';
+  document.getElementById('chpass-current').value = '';
+  document.getElementById('chpass-new').value = '';
+  document.getElementById('chpass-confirm').value = '';
+}
+
+// ── Audit ─────────────────────────────────────────────────────────────────────
+async function loadAudit() {
+  const logs = await apiFetch('/audit') || [];
+  const container = document.getElementById('audit-list');
+  if (!logs.length) { container.innerHTML = '<div class="empty-state"><p>Sin registros</p></div>'; return; }
+  container.innerHTML = logs.map(l => {
+    let desc = '';
+    try {
+      if (l.action==='LOGIN') desc = `Inicio de sesión`;
+      else if (l.action==='CREATE' && l.new_data) { const d=JSON.parse(l.new_data); desc=`Tarea creada: "${escH(d.name)}"`; }
+      else if (l.action==='UPDATE' && l.new_data) { const d=JSON.parse(l.new_data); desc=`Tarea actualizada: "${escH(d.name)}" → ${d.status}`; }
+      else if (l.action==='DELETE' && l.old_data) { const d=JSON.parse(l.old_data); desc=`Tarea eliminada: "${escH(d.name)}"`; }
+      else if (l.action.includes('USER')) { desc = l.action.replace('_USER','')+' usuario'; }
+    } catch {}
+    return `<div class="audit-item">
+      <span class="audit-action audit-${l.action}">${l.action}</span>
+      <div class="audit-text">${desc} ${l.actor_name?`<span style="color:var(--text3)">por ${escH(l.actor_name)}</span>`:''}</div>
+      <span class="audit-time">${l.timestamp}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exportExcel() {
+  const a = document.createElement('a');
+  a.href = API + '/export/excel';
+  // Pass token via query not ideal but simplest for file download
+  a.href = API + '/export/excel?_t=' + token;
+  a.click();
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function statusLabel(s) { return {pendiente:'Pendiente',en_progreso:'En progreso',completada:'Completada',cancelada:'Cancelada'}[s]||s; }
+function nextStatus(s) { return {pendiente:'en_progreso',en_progreso:'completada',completada:'pendiente',cancelada:'pendiente'}[s]||'pendiente'; }
+function escH(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async () => {
+  const ok = await tryAutoLogin();
+  if (ok) startApp();
+})();
+</script>
+</body>
+</html>
