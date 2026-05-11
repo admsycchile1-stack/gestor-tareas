@@ -11,11 +11,6 @@ services:
       - taskflow-data:/app/data
     networks:
       - taskflow-net
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/tasks"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
  
   frontend:
     build: ./frontend
