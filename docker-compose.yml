@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   backend:
     build: ./backend
@@ -17,22 +16,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
+ 
   frontend:
     build: ./frontend
     container_name: taskflow-frontend
     restart: unless-stopped
-    ports:
-      - "3080:80"
     depends_on:
       - backend
     networks:
       - taskflow-net
-
+ 
 volumes:
   taskflow-data:
     driver: local
-
+ 
 networks:
   taskflow-net:
     driver: bridge
