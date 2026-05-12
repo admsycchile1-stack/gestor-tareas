@@ -247,10 +247,67 @@ app.delete('/api/tasks/:id', requireAdmin, (req, res) => {
 });
 
 // ─── Audit ────────────────────────────────────────────────────────────────────
-app.get('/api/audit', requireAdmin, (req, res) => {
-  const logs = db.prepare(`SELECT a.*, u.full_name as actor_name FROM audit_log a
-    LEFT JOIN users u ON a.user_id=u.id ORDER BY a.timestamp DESC LIMIT 1000`).all();
-  res.json(logs);
+const isSuperAdmin = (req) => req.user.email === process.env.SUPERADMIN_EMAIL || req.user.role === 'superadmin';
+
+app.get('/api/audit', requireAuth, (req, res) => {
+  if (req.user.role !== 'admin' && !isSuperAdmin(req)) return res.status(403).json({ error: 'Acceso denegado' });
+  const { action, user_id, from, to } = req.query;
+  let q = `SELECT a.*, u.full_name as actor_name FROM audit_log a LEFT JOIN users u ON a.user_id=u.id WHERE 1=1`;
+  const p = [];
+  if (action) { q += ' AND a.action=?'; p.push(action); }
+  if (user_id) { q += ' AND a.user_id=?'; p.push(user_id); }
+  if (from) { q += ' AND a.timestamp >= ?'; p.push(from); }
+  if (to) { q += ' AND a.timestamp <= ?'; p.push(to+' 23:59:59'); }
+  q += ' ORDER BY a.timestamp DESC LIMIT 2000';
+  res.json(db.prepare(q).all(...p));
+});
+
+app.delete('/api/audit/bulk', requireAuth, (req, res) => {
+  if (!isSuperAdmin(req)) return res.status(403).json({ error: 'Solo el superadmin puede borrar auditoría' });
+  const { ids } = req.body;
+  if (!ids || !ids.length) return res.status(400).json({ error: 'IDs requeridos' });
+  db.prepare(`DELETE FROM audit_log WHERE id IN (${ids.map(()=>'?').join(',')})`).run(...ids);
+  res.json({ success: true, deleted: ids.length });
+});
+
+app.delete('/api/audit/all', requireAuth, (req, res) => {
+  if (!isSuperAdmin(req)) return res.status(403).json({ error: 'Solo el superadmin puede borrar auditoría' });
+  db.prepare('DELETE FROM audit_log').run();
+  res.json({ success: true });
+});
+
+app.delete('/api/audit/:id', requireAuth, (req, res) => {
+  if (!isSuperAdmin(req)) return res.status(403).json({ error: 'Solo el superadmin puede borrar auditoría' });
+  db.prepare('DELETE FROM audit_log WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+app.get('/api/stats', requireAuth, (req, res) => {
+  const scopeId = req.user.role === 'user' ? req.user.id : null;
+  const where = scopeId ? `WHERE t.user_id=${scopeId}` : '';
+
+  const byStatus   = db.prepare(`SELECT status, COUNT(*) as count FROM tasks t ${where} GROUP BY status`).all();
+  const byPriority = db.prepare(`SELECT priority, COUNT(*) as count FROM tasks t ${where} GROUP BY priority`).all();
+  const byUser     = db.prepare(`SELECT u.full_name, u.id as user_id,
+    SUM(CASE WHEN t.status='completada' THEN 1 ELSE 0 END) as completada,
+    SUM(CASE WHEN t.status='en_progreso' THEN 1 ELSE 0 END) as en_progreso,
+    SUM(CASE WHEN t.status='pendiente' THEN 1 ELSE 0 END) as pendiente,
+    SUM(CASE WHEN t.status='cancelada' THEN 1 ELSE 0 END) as cancelada,
+    COUNT(*) as total
+    FROM tasks t JOIN users u ON t.user_id=u.id ${where}
+    GROUP BY t.user_id ORDER BY total DESC`).all();
+  const byWeek     = db.prepare(`SELECT strftime('%Y-W%W', start_date) as period,
+    COUNT(*) as total, SUM(CASE WHEN status='completada' THEN 1 ELSE 0 END) as completada
+    FROM tasks t ${where} GROUP BY period ORDER BY period DESC LIMIT 8`).all().reverse();
+  const byMonth    = db.prepare(`SELECT strftime('%Y-%m', start_date) as period,
+    COUNT(*) as total, SUM(CASE WHEN status='completada' THEN 1 ELSE 0 END) as completada
+    FROM tasks t ${where} GROUP BY period ORDER BY period DESC LIMIT 12`).all().reverse();
+  const byYear     = db.prepare(`SELECT strftime('%Y', start_date) as period,
+    COUNT(*) as total, SUM(CASE WHEN status='completada' THEN 1 ELSE 0 END) as completada
+    FROM tasks t ${where} GROUP BY period ORDER BY period`).all();
+
+  res.json({ byStatus, byPriority, byUser, byWeek, byMonth, byYear });
 });
 
 // ─── Export ───────────────────────────────────────────────────────────────────
@@ -304,3 +361,5 @@ cron.schedule('0 8 * * *', () => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`API en puerto ${PORT}`));
+
+// placeholder - replaced below
