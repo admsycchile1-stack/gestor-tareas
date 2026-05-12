@@ -7,11 +7,13 @@ services:
     environment:
       - PORT=3001
       - DB_PATH=/app/data/tasks.db
+      - SUPERADMIN_EMAIL=aulavirtual@sycchile.com
+      - JWT_SECRET=syc-chile-prod-secret-2025
     volumes:
       - taskflow-data:/app/data
     networks:
       - taskflow-net
- 
+
   frontend:
     build: ./frontend
     container_name: taskflow-frontend
@@ -20,11 +22,11 @@ services:
       - backend
     networks:
       - taskflow-net
- 
+
 volumes:
   taskflow-data:
     driver: local
- 
+
 networks:
   taskflow-net:
     driver: bridge
