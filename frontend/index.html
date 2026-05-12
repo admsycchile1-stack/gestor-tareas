@@ -4,1231 +4,1195 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestor de Tareas S&C Chile</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--bg4:#252530;
-  --border:#2e2e3e;--border2:#3a3a4e;
-  --text:#e8e8f0;--text2:#9090a8;--text3:#5a5a70;
-  --accent:#7c6af5;--accent2:#9b8cff;--accent-bg:rgba(124,106,245,0.12);
-  --alta:#f5576c;--alta-bg:rgba(245,87,108,0.12);
-  --media:#f5a623;--media-bg:rgba(245,166,35,0.12);
-  --baja:#4cd964;--baja-bg:rgba(76,217,100,0.12);
-  --info:#5ac8fa;--radius:10px;--radius-lg:14px;
-  --shadow:0 4px 24px rgba(0,0,0,0.4);
-  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --blue:#0052cc;--blue2:#0065ff;--blue-light:#e6f0ff;--blue-mid:#cce0ff;--blue-dark:#003d99;
+  --bg:#f4f5f7;--white:#fff;--sidebar:#0747a6;
+  --text:#172b4d;--text2:#5e6c84;--text3:#97a0af;
+  --border:#dfe1e6;--border2:#c1c7d0;
+  --alta:#de350b;--alta-bg:#ffebe6;
+  --media:#ff8b00;--media-bg:#fffae6;
+  --baja:#36b37e;--baja-bg:#e3fcef;
+  --col-pend:#ebecf0;--col-prog:#e6f0ff;--col-done:#e3fcef;--col-cancel:#fff0f0;
+  --radius:8px;--radius-lg:10px;
+  --shadow:0 1px 3px rgba(9,30,66,.13),0 0 0 1px rgba(9,30,66,.08);
+  --shadow-lg:0 8px 32px rgba(9,30,66,.2);
+  --font:'Inter',sans-serif;
 }
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
 
 /* ── Login ── */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:radial-gradient(ellipse at 30% 20%,rgba(124,106,245,0.08) 0%,transparent 60%)}
-.login-card{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
-.login-logo{text-align:center;margin-bottom:32px}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0747a6,#0052cc 50%,#0065ff)}
+.login-card{background:var(--white);border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:28px}
 .login-logo img{width:200px;max-width:80%}
-.login-title{font-size:18px;font-weight:600;margin-bottom:4px;text-align:center}
-.login-sub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:28px}
-.login-error{background:var(--alta-bg);border:1px solid var(--alta);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--alta);margin-bottom:16px;display:none}
+.login-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:24px}
+.err-box{background:var(--alta-bg);border:1px solid var(--alta);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--alta);margin-bottom:14px;display:none}
 
-/* ── App Layout ── */
-#app-screen{display:none}
-.layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-.main{overflow-x:hidden;display:flex;flex-direction:column}
-.sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
-.sidebar-logo img{width:100%;max-width:180px;height:auto;display:block;filter:brightness(1.1)}
-.nav{padding:12px 0;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--text2);transition:all .15s;border-left:2px solid transparent;font-size:13.5px;user-select:none}
-.nav-item:hover{color:var(--text);background:var(--bg3)}
-.nav-item.active{color:var(--accent2);background:var(--accent-bg);border-left-color:var(--accent)}
-.nav-item.hidden{display:none}
-.sidebar-user{padding:14px 18px;border-top:1px solid var(--border)}
-.sidebar-user-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sidebar-user-role{font-size:11px;color:var(--text3);font-family:var(--mono)}
-.sidebar-bottom{padding:12px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+/* ── App ── */
+#app-screen{display:none;min-height:100vh;flex-direction:column}
+
+/* ── Topbar ── */
+.topbar{background:var(--sidebar);height:48px;display:flex;align-items:center;padding:0 14px;gap:10px;position:sticky;top:0;z-index:50;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-logo{height:26px;cursor:pointer;flex-shrink:0}
+.topbar-sep{width:1px;height:22px;background:rgba(255,255,255,.2);flex-shrink:0}
+.topbar-nav{display:flex;gap:2px;overflow-x:auto;flex:1}
+.topbar-nav::-webkit-scrollbar{display:none}
+.tb-btn{background:none;border:none;color:rgba(255,255,255,.82);cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;padding:5px 10px;border-radius:4px;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.tb-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.tb-btn.active{background:rgba(255,255,255,.22);color:#fff}
+.tb-btn.hidden{display:none}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.user-chip{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.9);font-size:13px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background .15s;position:relative;user-select:none}
+.user-chip:hover{background:rgba(255,255,255,.15)}
+.u-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.u-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:210px;display:none;border:1px solid var(--border);z-index:200}
+.u-dropdown.open{display:block}
+.u-drop-head{padding:12px 14px;border-bottom:1px solid var(--border)}
+.u-drop-name{font-size:13px;font-weight:600}
+.u-drop-email{font-size:11px;color:var(--text2)}
+.u-drop-item{padding:9px 14px;font-size:13px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.u-drop-item:hover{background:var(--blue-light)}
+.u-drop-item.danger{color:var(--alta)}
+.u-drop-item.danger:hover{background:var(--alta-bg)}
+
+/* ── Pages ── */
+.page{display:none;flex:1;flex-direction:column;min-height:0}
+.page.active{display:flex}
+.ph{padding:14px 18px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--white)}
+.ph-title{font-size:17px;font-weight:700}
+.ph-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.ha{display:flex;gap:7px;align-items:center;margin-left:auto;flex-wrap:wrap}
+.scroll-area{flex:1;overflow-y:auto;padding:16px 18px}
 
 /* ── Buttons ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:13px;font-family:var(--font);transition:all .15s;white-space:nowrap}
-.btn:hover{border-color:var(--border2);color:var(--text);background:var(--bg4)}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#fff}
-.btn-sm{padding:5px 12px;font-size:12px}
-.btn-danger{background:var(--alta-bg);border-color:var(--alta);color:var(--alta)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--radius);border:none;background:var(--blue-light);color:var(--blue);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:500;transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--blue-mid)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-ghost{background:none;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg);color:var(--text)}
+.btn-danger{background:var(--alta-bg);color:var(--alta);border:1px solid transparent}
 .btn-danger:hover{background:var(--alta);color:#fff}
-.btn-ghost{background:none;border-color:transparent;color:var(--text3)}
-.btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border)}
+.btn-white{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28)}
+.btn-white:hover{background:rgba(255,255,255,.28)}
 
-/* ── Page Structure ── */
-.page{display:none;flex-direction:column;flex:1}
-.page.active{display:flex}
-.page-header{padding:24px 32px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0;flex-wrap:wrap;gap:12px}
-.page-title{font-size:19px;font-weight:600;letter-spacing:-0.4px}
-.page-subtitle{font-size:12px;color:var(--text3);margin-top:2px}
-.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.content{padding:24px 32px;flex:1;overflow-y:auto}
-#alert-container{flex-shrink:0}
+/* ── Kanban ── */
+.kanban-wrap{flex:1;overflow-x:auto;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;min-height:0}
+.k-col{background:var(--col-pend);border-radius:var(--radius-lg);width:272px;min-width:272px;display:flex;flex-direction:column;max-height:100%}
+.k-col.col-en_progreso{background:var(--col-prog)}
+.k-col.col-completada{background:var(--col-done)}
+.k-col.col-cancelada{background:var(--col-cancel)}
+.k-col-head{padding:10px 12px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.k-col-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.k-count{background:rgba(9,30,66,.13);color:var(--text2);font-size:11px;font-weight:600;padding:1px 7px;border-radius:12px}
+.k-body{padding:0 8px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:7px}
+.k-body::-webkit-scrollbar{width:3px}
+.k-body::-webkit-scrollbar-thumb{background:rgba(9,30,66,.15);border-radius:3px}
+.k-add{padding:4px 8px 8px;flex-shrink:0}
+.k-add-btn{width:100%;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:13px;padding:7px;border-radius:var(--radius);cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:5px}
+.k-add-btn:hover{background:rgba(9,30,66,.08);color:var(--text)}
+.drop-zone{min-height:44px;border-radius:var(--radius);border:2px dashed var(--border2);display:none;align-items:center;justify-content:center;color:var(--text3);font-size:12px;margin-bottom:4px;flex-shrink:0}
+.drop-zone.active{display:flex;background:var(--blue-light);border-color:var(--blue)}
 
-/* ── Alert banner ── */
-.alert-banner{background:rgba(245,87,108,0.1);border:1px solid rgba(245,87,108,0.3);border-radius:var(--radius);padding:11px 16px;margin:12px 32px 0;display:flex;align-items:center;gap:12px}
-.alert-banner .ab-text{flex:1;font-size:13px}
-.alert-banner .ab-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px}
+/* ── Task Card ── */
+.t-card{background:var(--white);border-radius:var(--radius);padding:10px 12px;box-shadow:var(--shadow);cursor:grab;transition:box-shadow .2s,transform .15s;border-left:3px solid var(--border);position:relative;user-select:none}
+.t-card:hover{box-shadow:0 4px 14px rgba(9,30,66,.18);transform:translateY(-1px)}
+.t-card.dragging{opacity:.45;cursor:grabbing;transform:rotate(1.5deg) scale(1.02)}
+.t-card.alta{border-left-color:var(--alta)}
+.t-card.media{border-left-color:var(--media)}
+.t-card.baja{border-left-color:var(--baja)}
+.t-card-label{display:flex;gap:4px;margin-bottom:7px}
+.t-label{height:7px;border-radius:4px;min-width:38px}
+.t-label.alta{background:var(--alta)}
+.t-label.media{background:var(--media)}
+.t-label.baja{background:var(--baja)}
+.t-card-name{font-size:13.5px;font-weight:500;line-height:1.4;margin-bottom:5px}
+.t-card-desc{font-size:11.5px;color:var(--text2);line-height:1.5;margin-bottom:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.t-card-foot{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500}
+.chip-date{background:#f4f5f7;color:var(--text2)}
+.chip-date.overdue{background:var(--alta-bg);color:var(--alta)}
+.chip-date.due-soon{background:var(--media-bg);color:var(--media)}
+.chip-user{background:var(--blue-light);color:var(--blue)}
+.t-card-edit{opacity:0;position:absolute;top:7px;right:7px;background:var(--bg);border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px;color:var(--text2);transition:opacity .15s}
+.t-card:hover .t-card-edit{opacity:1}
+
+/* ── Calendar ── */
+.months-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.month-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);transition:all .18s}
+.month-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.month-card.current-month{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-light),var(--shadow)}
+.month-header{padding:9px 13px;font-size:13px;font-weight:600;background:var(--bg);border-bottom:1px solid var(--border);cursor:pointer}
+.month-header:hover{background:var(--blue-light)}
+.mini-cal{padding:7px}
+.mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.mini-dname{font-size:9px;color:var(--text3);text-align:center;padding:2px 0;font-weight:600}
+.mini-day{font-size:10px;text-align:center;padding:3px;border-radius:3px;color:var(--text2);min-height:19px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mini-day:hover{background:var(--blue-light)}
+.mini-day.has-t{background:var(--blue-light);color:var(--blue);font-weight:600}
+.mini-day.has-t.alta{background:var(--alta-bg);color:var(--alta)}
+.mini-day.today{background:var(--blue);color:#fff!important;font-weight:700}
+.mini-day.other-m{opacity:.2}
+
+/* ── Month View ── */
+.mv-grid{display:grid;grid-template-columns:repeat(7,1fr);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border)}
+.mv-dname{background:var(--sidebar);color:rgba(255,255,255,.9);padding:8px;text-align:center;font-size:11px;font-weight:600;border-right:1px solid rgba(255,255,255,.1)}
+.mv-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:95px;padding:5px;background:var(--white);cursor:pointer;transition:background .1s;overflow:hidden}
+.mv-cell:hover{background:var(--blue-light)}
+.mv-cell.today{background:#e6f0ff}
+.mv-cell.other-m{background:var(--bg);opacity:.55}
+.mv-cell .dnum{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.mv-cell.today .dnum{background:var(--blue);color:#fff}
+.mv-chip{font-size:10px;padding:1px 5px;border-radius:3px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;font-weight:500}
+.mv-chip.alta{background:var(--alta-bg);color:var(--alta)}
+.mv-chip.media{background:var(--media-bg);color:var(--media)}
+.mv-chip.baja{background:var(--baja-bg);color:var(--baja)}
+.mv-more{font-size:10px;color:var(--text2);padding:1px 3px}
 
 /* ── Stats ── */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
-.stat-num{font-size:26px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;margin-bottom:4px}
-.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.stats-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.ss-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.ss-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ss-num{font-size:22px;font-weight:700;line-height:1}
+.ss-label{font-size:11px;color:var(--text2);margin-top:2px;font-weight:500}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text);display:flex;align-items:center;justify-content:space-between}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:280px}
+.period-tabs{display:flex;gap:4px;background:var(--bg);border-radius:var(--radius);padding:3px;border:1px solid var(--border);margin-bottom:14px}
+.period-tab{flex:1;padding:5px;border:none;background:none;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.period-tab.active{background:var(--white);color:var(--blue);box-shadow:0 1px 3px rgba(9,30,66,.12)}
+.by-user-table{width:100%;border-collapse:collapse}
+.by-user-table th{text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;background:var(--bg);border-bottom:2px solid var(--border)}
+.by-user-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.by-user-table tr:last-child td{border-bottom:none}
+.by-user-table tr:hover td{background:var(--blue-light)}
+.progress-bar-wrap{width:100px;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-bar{height:100%;background:var(--blue);border-radius:4px;transition:width .3s}
 
-/* ── Today cards grid ── */
-.today-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.today-section-title{font-size:19px;font-weight:700;letter-spacing:-0.4px}
-.today-section-sub{font-size:12px;color:var(--text3);margin-top:2px}
-.today-tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.today-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px}
-.today-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
-.today-card.alta::before{background:linear-gradient(90deg,var(--alta),#ff8fa3)}
-.today-card.media::before{background:linear-gradient(90deg,var(--media),#ffd06b)}
-.today-card.baja::before{background:linear-gradient(90deg,var(--baja),#a8f5b8)}
-.today-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
-.today-card.completada{opacity:.55}
-.today-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.today-card-name{font-size:15px;font-weight:600;letter-spacing:-.2px;line-height:1.35}
-.today-card-prio{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.today-card-prio.alta{background:var(--alta);box-shadow:0 0 6px var(--alta)}
-.today-card-prio.media{background:var(--media);box-shadow:0 0 6px var(--media)}
-.today-card-prio.baja{background:var(--baja);box-shadow:0 0 6px var(--baja)}
-.today-card-desc{font-size:12.5px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.today-card-owner{font-size:11px;color:var(--text3);font-family:var(--mono)}
-.today-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)}
-.today-card-time{font-size:11.5px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:4px}
+/* ── Users ── */
+.table-wrap{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+table.u-table{width:100%;border-collapse:collapse}
+table.u-table th{text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;background:var(--bg);border-bottom:2px solid var(--border)}
+table.u-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.u-table tr:last-child td{border-bottom:none}
+table.u-table tr:hover td{background:var(--blue-light)}
+.u-av{width:32px;height:32px;border-radius:50%;background:var(--blue);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
 
-/* ── Task list ── */
-.tasks-list{display:flex;flex-direction:column;gap:10px}
-.task-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;transition:all .15s;border-left:3px solid var(--border);cursor:pointer}
-.task-card:hover{border-color:var(--border2)}
-.task-card.alta{border-left-color:var(--alta)}
-.task-card.media{border-left-color:var(--media)}
-.task-card.baja{border-left-color:var(--baja)}
-.task-card.completada{opacity:.6}
-.task-name{font-size:14px;font-weight:500;margin-bottom:4px}
-.task-desc{font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5}
-.task-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono)}
+/* ── Audit ── */
+.audit-wrap{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+.audit-toolbar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg)}
+.audit-row{display:grid;grid-template-columns:18px auto 1fr auto auto;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;transition:background .1s}
+.audit-row:last-child{border-bottom:none}
+.audit-row:hover{background:var(--blue-light)}
+.audit-row.selected{background:#e6f0ff}
+.a-check{width:15px;height:15px;cursor:pointer;accent-color:var(--blue)}
+.a-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;white-space:nowrap}
+.a-CREATE,.a-CREATE_USER{background:#e3fcef;color:#006644}
+.a-UPDATE,.a-UPDATE_USER{background:var(--blue-light);color:var(--blue)}
+.a-DELETE,.a-DELETE_USER{background:var(--alta-bg);color:var(--alta)}
+.a-LOGIN{background:#ede0ff;color:#403294}
+.a-text{font-size:12.5px;color:var(--text)}
+.a-actor{font-size:11px;color:var(--text2)}
+.a-time{font-size:11px;color:var(--text2);white-space:nowrap}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .badge-alta{background:var(--alta-bg);color:var(--alta)}
 .badge-media{background:var(--media-bg);color:var(--media)}
 .badge-baja{background:var(--baja-bg);color:var(--baja)}
-.badge-pendiente{background:rgba(90,200,250,.12);color:var(--info)}
-.badge-en_progreso{background:var(--accent-bg);color:var(--accent2)}
-.badge-completada{background:var(--baja-bg);color:var(--baja)}
-.badge-cancelada{background:rgba(200,200,200,.08);color:var(--text3)}
-.badge-admin{background:rgba(245,87,108,.12);color:var(--alta)}
-.badge-user{background:var(--accent-bg);color:var(--accent2)}
-.badge-viewer{background:rgba(90,200,250,.12);color:var(--info)}
-.task-time{font-size:11px;color:var(--text3);font-family:var(--mono)}
-.task-multiday{font-size:10px;padding:2px 6px;background:rgba(124,106,245,.15);color:var(--accent2);border-radius:4px;font-family:var(--mono)}
-.task-owner{font-size:11px;color:var(--text3);font-family:var(--mono)}
-.task-actions{display:flex;gap:6px;align-items:flex-start}
-.empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
-.empty-state .icon{font-size:32px;margin-bottom:12px}
-.empty-state p{margin-bottom:16px}
+.badge-pendiente{background:var(--col-pend);color:var(--text2)}
+.badge-en_progreso{background:var(--col-prog);color:var(--blue)}
+.badge-completada{background:var(--col-done);color:var(--baja)}
+.badge-cancelada{background:var(--alta-bg);color:var(--alta)}
+.badge-admin{background:#403294;color:#fff}
+.badge-superadmin{background:#172b4d;color:#fff}
+.badge-user{background:var(--blue-light);color:var(--blue)}
+.badge-viewer{background:#e3fcef;color:#006644}
 
-/* ── Calendar ── */
-.year-nav{display:flex;align-items:center;gap:12px}
-.year-label{font-size:20px;font-weight:600;letter-spacing:-.5px}
-.months-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.month-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .2s}
-.month-card:hover{border-color:var(--border2);transform:translateY(-1px)}
-.month-card.current-month{border-color:var(--accent)}
-.month-header{padding:11px 14px 8px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:1px solid var(--border)}
-.mini-cal{padding:8px}
-.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
-.mini-day-name{font-size:9px;color:var(--text3);text-align:center;padding:3px 0;font-family:var(--mono)}
-.mini-day{font-size:10px;text-align:center;padding:3px;border-radius:4px;color:var(--text3);min-height:20px;display:flex;align-items:center;justify-content:center;position:relative}
-.mini-day.has-task{color:var(--accent2);background:var(--accent-bg)}
-.mini-day.has-task.alta{color:var(--alta);background:var(--alta-bg)}
-.mini-day.today{background:var(--accent);color:#fff!important;font-weight:600}
-.mini-day.other-month{opacity:.2}
+/* ── User pills ── */
+.pills{display:flex;gap:5px;flex-wrap:wrap;padding:8px 18px 0}
+.pill{padding:4px 11px;border-radius:20px;font-size:12px;border:2px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;transition:all .15s;font-weight:500}
+.pill:hover{border-color:var(--blue);color:var(--blue)}
+.pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
 
-/* ── Month View ── */
-.month-view-grid{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border);border-top:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
-.mv-day-name{background:var(--bg3);padding:8px;text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
-.mv-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:90px;padding:6px;background:var(--bg2);cursor:pointer;transition:background .1s;overflow:hidden}
-.mv-cell:hover{background:var(--bg3)}
-.mv-cell.today{background:var(--accent-bg)}
-.mv-cell.other-month{opacity:.35}
-.mv-cell .day-num{font-size:12px;font-weight:500;color:var(--text3);margin-bottom:4px;font-family:var(--mono)}
-.mv-cell.today .day-num{color:var(--accent2);font-weight:700}
-.mv-task-chip{font-size:10px;padding:2px 5px;border-radius:4px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block}
-.mv-task-chip.alta{background:var(--alta-bg);color:var(--alta)}
-.mv-task-chip.media{background:var(--media-bg);color:var(--media)}
-.mv-task-chip.baja{background:var(--baja-bg);color:var(--baja)}
-.mv-more{font-size:10px;color:var(--text3);padding:1px 4px}
-
-/* ── Users table ── */
-.users-table{width:100%;border-collapse:collapse}
-.users-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border);font-family:var(--mono)}
-.users-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
-.users-table tr:hover td{background:var(--bg3)}
-.users-table tr:last-child td{border-bottom:none}
-.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--accent2);flex-shrink:0}
-
-/* ── Filter bar ── */
-.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.search-input-wrap{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;min-width:200px}
-.search-input-wrap input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:13px;flex:1;outline:none;min-width:80px}
-.search-input-wrap input::placeholder{color:var(--text3)}
-
-/* ── User filter pills ── */
-.user-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.user-pill{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--mono)}
-.user-pill:hover{border-color:var(--border2);color:var(--text)}
-.user-pill.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent2)}
-
-/* ── Audit ── */
-.audit-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);align-items:start}
-.audit-action{font-size:11px;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-weight:500;white-space:nowrap}
-.audit-CREATE{background:var(--baja-bg);color:var(--baja)}
-.audit-UPDATE{background:var(--accent-bg);color:var(--accent2)}
-.audit-DELETE{background:var(--alta-bg);color:var(--alta)}
-.audit-LOGIN{background:rgba(90,200,250,.12);color:var(--info)}
-.audit-CREATE_USER{background:var(--baja-bg);color:var(--baja)}
-.audit-UPDATE_USER{background:var(--accent-bg);color:var(--accent2)}
-.audit-DELETE_USER{background:var(--alta-bg);color:var(--alta)}
-.audit-text{font-size:12px;color:var(--text2)}
-.audit-time{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap}
+/* ── Alert ── */
+.alert-banner{background:#fffae6;border:1px solid var(--media);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap;max-width:320px;overflow:hidden}
+.alert-banner span{overflow:hidden;text-overflow:ellipsis;flex:1}
+.alert-banner button{background:none;border:none;cursor:pointer;color:var(--text2);font-size:14px;flex-shrink:0}
 
 /* ── Modal ── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:540px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow)}
-.modal-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-title{font-size:16px;font-weight:600}
-.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px 6px;border-radius:6px}
-.modal-close:hover{color:var(--text);background:var(--bg3)}
-.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
-.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.modal-backdrop{position:fixed;inset:0;background:rgba(9,30,66,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--white);border-radius:var(--radius-lg);width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.m-head{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.m-title{font-size:15px;font-weight:700}
+.m-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1;padding:2px 6px;border-radius:4px}
+.m-close:hover{background:var(--bg);color:var(--text)}
+.m-body{padding:16px 18px;overflow-y:auto;flex:1}
+.m-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end;background:var(--bg);border-radius:0 0 var(--radius-lg) var(--radius-lg)}
 
 /* ── Form ── */
-.form-group{margin-bottom:15px}
-.form-label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;letter-spacing:.3px}
-.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13.5px;transition:border .15s}
-.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent);background:var(--bg4)}
-.form-select option{background:var(--bg3)}
-.form-textarea{resize:vertical;min-height:76px;line-height:1.5}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
-.form-error{font-size:12px;color:var(--alta);margin-top:4px;display:none}
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px}
+.fi,.fs,.fta{width:100%;padding:8px 11px;background:var(--white);border:2px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px;transition:border .15s}
+.fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--blue)}
+.fs option{background:var(--white)}
+.fta{resize:vertical;min-height:72px;line-height:1.5}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fhint{font-size:11px;color:var(--text2);margin-top:3px}
+.ferr{background:var(--alta-bg);border:1px solid var(--alta);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--alta);margin-bottom:11px;display:none}
 
-/* ── View selector ── */
-.view-toggle{display:flex;background:var(--bg3);border-radius:var(--radius);padding:2px;border:1px solid var(--border)}
-.view-btn{padding:5px 12px;border-radius:8px;border:none;background:none;color:var(--text3);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .15s}
-.view-btn.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+/* ── Search ── */
+.search-wrap{display:flex;align-items:center;gap:7px;background:var(--white);border:2px solid var(--border);border-radius:var(--radius);padding:5px 11px}
+.search-wrap:focus-within{border-color:var(--blue)}
+.search-wrap input{background:none;border:none;color:var(--text);font-family:var(--font);font-size:13px;outline:none;min-width:110px}
+.search-wrap input::placeholder{color:var(--text3)}
 
-/* ── Day modal ── */
-#day-modal .modal{max-width:620px}
-
+/* ── Scrollbar ── */
 ::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     LOGIN SCREEN
-══════════════════════════════════════════ -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">
-      <img src="/logo.png" alt="S&C Chile Capacitaciones">
-    </div>
+    <div class="login-logo"><img src="/logo.png" alt="S&C Chile"></div>
     <div class="login-title">Gestor de Tareas</div>
-    <div class="login-sub">Ingresa tus credenciales para continuar</div>
-    <div class="login-error" id="login-error"></div>
-    <div class="form-group">
-      <label class="form-label">Correo electrónico</label>
-      <input class="form-input" type="email" id="login-email" placeholder="tu@email.com" autocomplete="username">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Contraseña</label>
-      <input class="form-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()" id="login-btn">Ingresar</button>
+    <div class="login-sub">Ingresa con tus credenciales</div>
+    <div class="err-box" id="login-err"></div>
+    <div class="fg"><label class="fl">Correo electrónico</label><input class="fi" type="email" id="login-email" placeholder="tu@email.com" autocomplete="username"></div>
+    <div class="fg"><label class="fl">Contraseña</label><input class="fi" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px" onclick="doLogin()" id="login-btn">Ingresar</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     APP SCREEN
-══════════════════════════════════════════ -->
+<!-- APP -->
 <div id="app-screen">
-<div class="layout">
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="/logo.png" alt="S&C Chile">
+  <div class="topbar">
+    <img src="/logo.png" class="topbar-logo" onclick="showPage('board')" alt="S&C">
+    <div class="topbar-sep"></div>
+    <div class="topbar-nav">
+      <button class="tb-btn active" onclick="showPage('board')"    id="nav-board">📋 Tablero</button>
+      <button class="tb-btn"        onclick="showPage('calendar')" id="nav-calendar">📅 Calendario</button>
+      <button class="tb-btn"        onclick="showPage('month')"    id="nav-month">🗓 Mensual</button>
+      <button class="tb-btn"        onclick="showPage('tasks')"    id="nav-tasks">☰ Lista</button>
+      <button class="tb-btn"        onclick="showPage('charts')"   id="nav-charts">📊 Gráficos</button>
+      <button class="tb-btn hidden" onclick="showPage('users')"    id="nav-users">👥 Usuarios</button>
+      <button class="tb-btn hidden" onclick="showPage('audit')"    id="nav-audit">📜 Auditoría</button>
     </div>
-    <nav class="nav" id="main-nav">
-      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
-        Dashboard
-      </div>
-      <div class="nav-item" onclick="showPage('calendar')" id="nav-calendar">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="12" rx="2"/><path d="M1 7h14M5 1v4M11 1v4"/></svg>
-        Calendario Anual
-      </div>
-      <div class="nav-item" onclick="showPage('month')" id="nav-month">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="12" rx="2"/><path d="M1 7h14M5 1v4M11 1v4M4 10h2M7 10h2M10 10h2"/></svg>
-        Vista Mensual
-      </div>
-      <div class="nav-item" onclick="showPage('tasks')" id="nav-tasks">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
-        Todas las Tareas
-      </div>
-      <div class="nav-item hidden" onclick="showPage('users')" id="nav-users">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 3c1.5.5 2.5 1.8 2.5 3.5S12.5 9.5 11 10"/><path d="M13 11c1.5.5 2.5 1.5 2.5 3"/></svg>
-        Usuarios
-      </div>
-      <div class="nav-item hidden" onclick="showPage('audit')" id="nav-audit">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12v12H2z"/><path d="M5 5h6M5 8h6M5 11h3"/></svg>
-        Auditoría
-      </div>
-    </nav>
-    <div class="sidebar-user" id="sidebar-user-info">
-      <div class="sidebar-user-name" id="sidebar-name">—</div>
-      <div class="sidebar-user-role" id="sidebar-role">—</div>
-    </div>
-    <div class="sidebar-bottom">
-      <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="showChangePassword()">🔑 Cambiar contraseña</button>
-      <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="exportExcel()">📊 Exportar Excel</button>
-      <button class="btn btn-danger btn-sm" style="justify-content:center" onclick="doLogout()">Cerrar sesión</button>
-    </div>
-  </aside>
-
-  <!-- Main -->
-  <div class="main" id="main-content">
-    <div id="alert-container"></div>
-
-    <!-- Dashboard -->
-    <div class="page active" id="page-dashboard">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Dashboard</div>
-          <div class="page-subtitle" id="today-label">—</div>
-        </div>
-        <div class="header-actions" id="dash-header-actions"></div>
-      </div>
-      <div class="content">
-        <div class="stats-row" id="stats-row">
-          <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total Tareas</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-pending" style="color:var(--info)">—</div><div class="stat-label">Pendientes</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-inprogress" style="color:var(--accent2)">—</div><div class="stat-label">En Progreso</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-done" style="color:var(--baja)">—</div><div class="stat-label">Completadas</div></div>
-        </div>
-        <div class="today-section-header">
-          <div>
-            <div class="today-section-title">Tareas de Hoy</div>
-            <div class="today-section-sub" id="today-count"></div>
+    <div class="topbar-right">
+      <div id="alert-container"></div>
+      <button class="btn btn-white btn-sm" onclick="exportExcel()">↓ Excel</button>
+      <div class="user-chip" onclick="toggleDrop()" id="user-chip">
+        <div class="u-avatar" id="topbar-av">?</div>
+        <span id="topbar-name">—</span>
+        <span style="font-size:10px;opacity:.6">▾</span>
+        <div class="u-dropdown" id="user-drop">
+          <div class="u-drop-head">
+            <div class="u-drop-name" id="dd-name">—</div>
+            <div class="u-drop-email" id="dd-email">—</div>
           </div>
-          <div id="dash-add-btn"></div>
+          <div class="u-drop-item" onclick="showChangePwd()">🔑 Cambiar contraseña</div>
+          <div class="u-drop-item danger" onclick="doLogout()">← Cerrar sesión</div>
         </div>
-        <div id="today-tasks" class="today-tasks-grid"></div>
       </div>
     </div>
+  </div>
 
-    <!-- Calendario Anual -->
-    <div class="page" id="page-calendar">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Calendario Anual</div>
-          <div class="page-subtitle">Vista general del año</div>
+  <!-- BOARD -->
+  <div class="page active" id="page-board">
+    <div class="ph">
+      <div><div class="ph-title">Tablero de Tareas</div><div class="ph-sub" id="board-sub">—</div></div>
+      <div class="ha">
+        <div id="board-filter-wrap" style="display:none">
+          <select class="fi" style="width:165px;padding:5px 9px" id="board-user-sel" onchange="loadBoard()"><option value="">Todos</option></select>
         </div>
-        <div class="header-actions">
-          <div class="year-nav">
-            <button class="btn btn-sm" onclick="changeYear(-1)">‹</button>
-            <span class="year-label" id="cal-year">—</span>
-            <button class="btn btn-sm" onclick="changeYear(1)">›</button>
-          </div>
-          <div id="cal-user-filter-wrap" style="display:none">
-            <select class="form-select" style="width:180px" id="cal-user-filter" onchange="renderAnnualCalendar()">
-              <option value="">Todos los usuarios</option>
-            </select>
-          </div>
-          <div id="cal-add-btn"></div>
-        </div>
-      </div>
-      <div class="content">
-        <div class="months-grid" id="months-grid"></div>
+        <div id="board-add-btn"></div>
       </div>
     </div>
+    <div class="pills" id="board-pills" style="display:none"></div>
+    <div class="kanban-wrap" id="kanban-wrap"></div>
+  </div>
 
-    <!-- Vista Mensual -->
-    <div class="page" id="page-month">
-      <div class="page-header">
-        <div>
-          <div class="page-title" id="month-title">—</div>
-          <div class="page-subtitle">Vista mensual detallada</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-sm" onclick="changeMonth(-1)">‹</button>
-          <button class="btn btn-sm" onclick="changeMonth(1)">›</button>
-          <div id="month-user-filter-wrap" style="display:none">
-            <select class="form-select" style="width:160px" id="month-user-filter" onchange="renderMonthView()">
-              <option value="">Todos</option>
-            </select>
-          </div>
-          <div id="month-add-btn"></div>
-        </div>
+  <!-- CALENDAR -->
+  <div class="page" id="page-calendar">
+    <div class="ph">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="changeYear(-1)">‹</button>
+        <span style="font-size:17px;font-weight:700" id="cal-year">—</span>
+        <button class="btn btn-ghost btn-sm" onclick="changeYear(1)">›</button>
       </div>
-      <div class="content">
-        <div class="month-view-grid" id="month-view-grid"></div>
+      <div class="ha">
+        <div id="cal-user-wrap" style="display:none"><select class="fi" style="width:160px;padding:5px 9px" id="cal-user-sel" onchange="renderAnnualCalendar()"><option value="">Todos</option></select></div>
+        <div id="cal-add-btn"></div>
       </div>
     </div>
+    <div class="scroll-area"><div class="months-grid" id="months-grid"></div></div>
+  </div>
 
-    <!-- Todas las Tareas -->
-    <div class="page" id="page-tasks">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Todas las Tareas</div>
-          <div class="page-subtitle" id="tasks-subtitle">—</div>
-        </div>
-        <div class="header-actions">
-          <div class="filter-bar">
-            <div class="search-input-wrap">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3);flex-shrink:0"><circle cx="6" cy="6" r="4"/><path d="M10 10l3 3"/></svg>
-              <input id="search-input" placeholder="Buscar..." oninput="filterTasks()">
-            </div>
-            <select class="form-select" style="width:120px" id="filter-priority" onchange="filterTasks()">
-              <option value="">Prioridad</option>
-              <option value="alta">Alta</option>
-              <option value="media">Media</option>
-              <option value="baja">Baja</option>
-            </select>
-            <select class="form-select" style="width:130px" id="filter-status" onchange="filterTasks()">
-              <option value="">Estado</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="en_progreso">En Progreso</option>
-              <option value="completada">Completada</option>
-              <option value="cancelada">Cancelada</option>
-            </select>
-          </div>
-          <div id="tasks-add-btn"></div>
-        </div>
+  <!-- MONTH -->
+  <div class="page" id="page-month">
+    <div class="ph">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">‹</button>
+        <span style="font-size:17px;font-weight:700" id="month-title">—</span>
+        <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">›</button>
       </div>
-      <div class="content">
-        <div id="tasks-user-pills" class="user-pills" style="display:none"></div>
-        <div id="all-tasks-list" class="tasks-list"></div>
+      <div class="ha">
+        <div id="month-user-wrap" style="display:none"><select class="fi" style="width:160px;padding:5px 9px" id="month-user-sel" onchange="renderMonthView()"><option value="">Todos</option></select></div>
+        <div id="month-add-btn"></div>
       </div>
     </div>
+    <div class="scroll-area"><div class="mv-grid" id="mv-grid"></div></div>
+  </div>
 
-    <!-- Usuarios -->
-    <div class="page" id="page-users">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Gestión de Usuarios</div>
-          <div class="page-subtitle">Solo visible para administradores</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-primary" onclick="openNewUserModal()">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>
-            Nuevo Usuario
-          </button>
-        </div>
-      </div>
-      <div class="content">
-        <div id="users-list"></div>
+  <!-- TASKS LIST -->
+  <div class="page" id="page-tasks">
+    <div class="ph">
+      <div><div class="ph-title">Lista de Tareas</div><div class="ph-sub" id="tasks-sub">—</div></div>
+      <div class="ha">
+        <div class="search-wrap"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="6" cy="6" r="4"/><path d="M10 10l3 3"/></svg><input id="search-input" placeholder="Buscar..." oninput="filterTasks()"></div>
+        <select class="fi" style="width:115px;padding:5px 9px" id="filter-priority" onchange="filterTasks()"><option value="">Prioridad</option><option value="alta">🔴 Alta</option><option value="media">🟡 Media</option><option value="baja">🟢 Baja</option></select>
+        <select class="fi" style="width:125px;padding:5px 9px" id="filter-status" onchange="filterTasks()"><option value="">Estado</option><option value="pendiente">Pendiente</option><option value="en_progreso">En Progreso</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option></select>
+        <div id="tasks-add-btn"></div>
       </div>
     </div>
+    <div class="pills" id="tasks-pills" style="display:none"></div>
+    <div class="scroll-area"><div id="all-tasks-list"></div></div>
+  </div>
 
-    <!-- Auditoría -->
-    <div class="page" id="page-audit">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Registro de Auditoría</div>
-          <div class="page-subtitle">Historial completo de acciones</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-sm" onclick="loadAudit()">↺ Actualizar</button>
+  <!-- CHARTS -->
+  <div class="page" id="page-charts">
+    <div class="ph">
+      <div><div class="ph-title">Gráficos y Estadísticas</div><div class="ph-sub">Progreso de tareas por período y usuario</div></div>
+      <div class="ha">
+        <button class="btn btn-primary" onclick="exportChartsPDF()">↓ Exportar PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadCharts()">↺</button>
+      </div>
+    </div>
+    <div class="scroll-area" id="charts-area">
+      <!-- Stat summary -->
+      <div class="stats-summary" id="stats-summary"></div>
+      <!-- Period selector -->
+      <div class="period-tabs" id="period-tabs">
+        <button class="period-tab active" onclick="setPeriod('week')">Por Semana</button>
+        <button class="period-tab" onclick="setPeriod('month')">Por Mes</button>
+        <button class="period-tab" onclick="setPeriod('year')">Por Año</button>
+      </div>
+      <div class="charts-grid" id="charts-grid">
+        <div class="chart-card full"><div class="chart-title"><span id="trend-title">Tendencia semanal</span></div><div class="chart-wrap tall"><canvas id="chart-trend"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Estado de tareas</div><div class="chart-wrap"><canvas id="chart-status"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Prioridad</div><div class="chart-wrap"><canvas id="chart-priority"></canvas></div></div>
+        <div class="chart-card full" id="by-user-card" style="display:none">
+          <div class="chart-title">Tareas por Usuario</div>
+          <div style="overflow-x:auto"><table class="by-user-table" id="by-user-table"></table></div>
         </div>
       </div>
-      <div class="content"><div id="audit-list"></div></div>
     </div>
+  </div>
 
-  </div><!-- /main -->
-</div><!-- /layout -->
-</div><!-- /app-screen -->
+  <!-- USERS -->
+  <div class="page" id="page-users">
+    <div class="ph">
+      <div><div class="ph-title">Gestión de Usuarios</div><div class="ph-sub">Solo administradores</div></div>
+      <div class="ha"><button class="btn btn-primary" onclick="openNewUserModal()">+ Nuevo Usuario</button></div>
+    </div>
+    <div class="scroll-area"><div class="table-wrap"><div id="users-list"></div></div></div>
+  </div>
 
-<!-- Day Modal -->
+  <!-- AUDIT -->
+  <div class="page" id="page-audit">
+    <div class="ph">
+      <div><div class="ph-title">Auditoría</div><div class="ph-sub" id="audit-sub">Registro de acciones del sistema</div></div>
+      <div class="ha">
+        <button class="btn btn-ghost btn-sm" onclick="loadAudit()">↺ Actualizar</button>
+        <button class="btn btn-danger btn-sm hidden" id="audit-delete-sel-btn" onclick="deleteSelectedAudit()">🗑 Borrar selección</button>
+        <button class="btn btn-danger btn-sm hidden" id="audit-delete-all-btn" onclick="deleteAllAudit()">🗑 Borrar todo</button>
+      </div>
+    </div>
+    <div class="scroll-area" style="padding:0">
+      <div class="audit-wrap" id="audit-wrap">
+        <div class="audit-toolbar">
+          <select class="fi" style="width:160px;padding:5px 9px" id="audit-filter-action" onchange="loadAudit()"><option value="">Todas las acciones</option><option value="LOGIN">LOGIN</option><option value="CREATE">CREATE</option><option value="UPDATE">UPDATE</option><option value="DELETE">DELETE</option><option value="CREATE_USER">CREATE_USER</option><option value="UPDATE_USER">UPDATE_USER</option><option value="DELETE_USER">DELETE_USER</option></select>
+          <select class="fi" style="width:155px;padding:5px 9px" id="audit-filter-user" onchange="loadAudit()"><option value="">Todos los usuarios</option></select>
+          <input class="fi" type="date" id="audit-from" style="width:140px;padding:5px 9px" onchange="loadAudit()">
+          <input class="fi" type="date" id="audit-to" style="width:140px;padding:5px 9px" onchange="loadAudit()">
+          <span style="font-size:12px;color:var(--text2)" id="audit-count"></span>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;margin-left:auto" id="select-all-label" class="hidden"><input type="checkbox" id="audit-select-all" onchange="toggleSelectAll()"> Seleccionar todo</label>
+        </div>
+        <div id="audit-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- DAY MODAL -->
 <div class="modal-backdrop" id="day-modal" style="display:none" onclick="if(event.target===this)closeDayModal()">
-  <div class="modal" style="max-width:640px">
-    <div class="modal-header">
-      <span class="modal-title" id="day-modal-title">Tareas del día</span>
-      <button class="modal-close" onclick="closeDayModal()">×</button>
-    </div>
-    <div class="modal-body"><div id="day-modal-tasks"></div></div>
-    <div class="modal-footer">
-      <div id="day-modal-add-btn"></div>
-      <button class="btn" onclick="closeDayModal()">Cerrar</button>
-    </div>
+  <div class="modal" style="max-width:620px">
+    <div class="m-head"><span class="m-title" id="day-modal-title">Tareas del día</span><button class="m-close" onclick="closeDayModal()">×</button></div>
+    <div class="m-body"><div id="day-modal-tasks"></div></div>
+    <div class="m-foot"><div id="day-modal-add"></div><button class="btn btn-ghost" onclick="closeDayModal()">Cerrar</button></div>
   </div>
 </div>
 
-<!-- Task Modal -->
+<!-- TASK MODAL -->
 <div class="modal-backdrop" id="task-modal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="task-modal-title">Nueva Tarea</span>
-      <button class="modal-close" onclick="closeTaskModal()">×</button>
-    </div>
-    <div class="modal-body">
+    <div class="m-head"><span class="m-title" id="task-modal-title">Nueva Tarea</span><button class="m-close" onclick="closeTaskModal()">×</button></div>
+    <div class="m-body">
       <input type="hidden" id="task-id">
-      <div class="form-group">
-        <label class="form-label">Nombre *</label>
-        <input class="form-input" id="task-name" placeholder="¿En qué vas a trabajar?">
+      <div class="fg"><label class="fl">Nombre *</label><input class="fi" id="task-name" placeholder="¿En qué vas a trabajar?"></div>
+      <div class="fg"><label class="fl">Descripción</label><textarea class="fta" id="task-desc" placeholder="Descripción detallada..."></textarea></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Fecha inicio *</label><input class="fi" type="date" id="task-start-date"></div>
+        <div class="fg"><label class="fl">Fecha término *</label><input class="fi" type="date" id="task-end-date"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Descripción</label>
-        <textarea class="form-textarea" id="task-desc" placeholder="Descripción detallada..."></textarea>
+      <div class="frow">
+        <div class="fg"><label class="fl">Hora inicio</label><input class="fi" type="time" id="task-start-time"></div>
+        <div class="fg"><label class="fl">Hora término</label><input class="fi" type="time" id="task-end-time"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Fecha inicio *</label>
-          <input class="form-input" type="date" id="task-start-date">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Fecha término *</label>
-          <input class="form-input" type="date" id="task-end-date">
-        </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Prioridad</label><select class="fs" id="task-priority"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Media</option><option value="baja">🟢 Baja</option></select></div>
+        <div class="fg" id="status-group" style="display:none"><label class="fl">Estado</label><select class="fs" id="task-status"><option value="pendiente">Pendiente</option><option value="en_progreso">En Progreso</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option></select></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Hora inicio</label>
-          <input class="form-input" type="time" id="task-start-time">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Hora término</label>
-          <input class="form-input" type="time" id="task-end-time">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Prioridad</label>
-          <select class="form-select" id="task-priority">
-            <option value="alta">🔴 Alta</option>
-            <option value="media" selected>🟡 Media</option>
-            <option value="baja">🟢 Baja</option>
-          </select>
-        </div>
-        <div class="form-group" id="status-group" style="display:none">
-          <label class="form-label">Estado</label>
-          <select class="form-select" id="task-status">
-            <option value="pendiente">Pendiente</option>
-            <option value="en_progreso">En Progreso</option>
-            <option value="completada">Completada</option>
-            <option value="cancelada">Cancelada</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group" id="assign-user-group" style="display:none">
-        <label class="form-label">Asignar a usuario</label>
-        <select class="form-select" id="task-user-id"></select>
-      </div>
-      <div class="form-hint">⏰ Alerta automática 1 día antes del vencimiento</div>
+      <div class="fg" id="assign-user-group" style="display:none"><label class="fl">Asignar a</label><select class="fs" id="task-user-id"></select></div>
+      <div class="fhint">⏰ Alerta automática 1 día antes del vencimiento</div>
     </div>
-    <div class="modal-footer">
+    <div class="m-foot">
       <button class="btn btn-danger" id="delete-task-btn" style="display:none;margin-right:auto" onclick="deleteTask()">Eliminar</button>
-      <button class="btn" onclick="closeTaskModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveTask()">Guardar</button>
+      <button class="btn btn-ghost" onclick="closeTaskModal()">Cancelar</button>
+      <button class="btn btn-primary" id="save-task-btn" onclick="saveTask()">Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- User Modal -->
+<!-- USER MODAL -->
 <div class="modal-backdrop" id="user-modal" style="display:none" onclick="if(event.target===this)closeUserModal()">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="user-modal-title">Nuevo Usuario</span>
-      <button class="modal-close" onclick="closeUserModal()">×</button>
-    </div>
-    <div class="modal-body">
+    <div class="m-head"><span class="m-title" id="user-modal-title">Nuevo Usuario</span><button class="m-close" onclick="closeUserModal()">×</button></div>
+    <div class="m-body">
       <input type="hidden" id="user-id">
-      <div id="user-modal-error" class="login-error" style="display:none"></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">RUT *</label>
-          <input class="form-input" id="user-rut" placeholder="12345678-9">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Rol *</label>
-          <select class="form-select" id="user-role">
-            <option value="user">👤 Usuario</option>
-            <option value="viewer">👁 Visualizador</option>
-            <option value="admin">⚡ Administrador</option>
-          </select>
-        </div>
+      <div class="ferr" id="user-modal-err"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">RUT *</label><input class="fi" id="user-rut" placeholder="12345678-9"></div>
+        <div class="fg"><label class="fl">Rol *</label><select class="fs" id="user-role"><option value="user">👤 Usuario</option><option value="viewer">👁 Visualizador</option><option value="admin">⚡ Administrador</option></select></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Nombre completo *</label>
-        <input class="form-input" id="user-name" placeholder="Nombre Apellido">
+      <div class="fg"><label class="fl">Nombre completo *</label><input class="fi" id="user-name" placeholder="Nombre Apellido"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="user-phone" placeholder="+56912345678"></div>
+        <div class="fg"><label class="fl">Email *</label><input class="fi" type="email" id="user-email" placeholder="correo@empresa.cl"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Teléfono</label>
-          <input class="form-input" id="user-phone" placeholder="+56912345678">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email *</label>
-          <input class="form-input" type="email" id="user-email" placeholder="correo@empresa.cl">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label" id="pass-label">Contraseña * (mín. 8 caracteres)</label>
-        <input class="form-input" type="password" id="user-pass" placeholder="••••••••" autocomplete="new-password">
-        <div class="form-hint" id="pass-hint" style="display:none">Dejar en blanco para mantener la contraseña actual</div>
-      </div>
+      <div class="fg"><label class="fl" id="pass-label">Contraseña * (mín. 8 caracteres)</label><input class="fi" type="password" id="user-pass" autocomplete="new-password"><div class="fhint" id="pass-hint" style="display:none">Dejar en blanco para mantener la contraseña actual</div></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="delete-user-btn" style="display:none;margin-right:auto" onclick="deleteUser()">Eliminar usuario</button>
-      <button class="btn" onclick="closeUserModal()">Cancelar</button>
+    <div class="m-foot">
+      <button class="btn btn-danger" id="del-user-btn" style="display:none;margin-right:auto" onclick="deleteUser()">Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- Change Password Modal -->
-<div class="modal-backdrop" id="chpass-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header">
-      <span class="modal-title">Cambiar Contraseña</span>
-      <button class="modal-close" onclick="document.getElementById('chpass-modal').style.display='none'">×</button>
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-backdrop" id="chpwd-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:380px">
+    <div class="m-head"><span class="m-title">Cambiar Contraseña</span><button class="m-close" onclick="document.getElementById('chpwd-modal').style.display='none'">×</button></div>
+    <div class="m-body">
+      <div class="ferr" id="chpwd-err"></div>
+      <div id="chpwd-ok" style="display:none;background:#e3fcef;border:1px solid var(--baja);border-radius:var(--radius);padding:9px;font-size:13px;color:#006644;margin-bottom:12px">✓ Contraseña actualizada</div>
+      <div class="fg"><label class="fl">Contraseña actual</label><input class="fi" type="password" id="chpwd-cur" autocomplete="current-password"></div>
+      <div class="fg"><label class="fl">Nueva contraseña</label><input class="fi" type="password" id="chpwd-new" autocomplete="new-password"></div>
+      <div class="fg"><label class="fl">Confirmar nueva</label><input class="fi" type="password" id="chpwd-conf" autocomplete="new-password"></div>
     </div>
-    <div class="modal-body">
-      <div id="chpass-error" class="login-error" style="display:none"></div>
-      <div id="chpass-success" style="display:none;background:var(--baja-bg);border:1px solid var(--baja);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--baja);margin-bottom:14px">Contraseña actualizada correctamente</div>
-      <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="chpass-current" autocomplete="current-password"></div>
-      <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="chpass-new" autocomplete="new-password"></div>
-      <div class="form-group"><label class="form-label">Confirmar nueva contraseña</label><input class="form-input" type="password" id="chpass-confirm" autocomplete="new-password"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="document.getElementById('chpass-modal').style.display='none'">Cancelar</button>
+    <div class="m-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('chpwd-modal').style.display='none'">Cancelar</button>
       <button class="btn btn-primary" onclick="changePassword()">Guardar</button>
     </div>
   </div>
 </div>
 
 <script>
-const API = '/api';
-const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS_SHORT = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
-const today = new Date();
-const todayStr = today.toISOString().split('T')[0];
+const API='/api';
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS_S=['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+const today=new Date(), todayStr=today.toISOString().split('T')[0];
+let currentYear=today.getFullYear(), currentMonth=today.getMonth();
+let allTasks=[], allUsers=[], currentUser=null, token=null;
+let selectedDay=null, editingTaskId=null, editingUserId=null;
+let activeUserFilter='', dragTaskId=null;
+let chartInstances={}, currentPeriod='week';
+let statsData=null;
+let selectedAuditIds=new Set();
 
-let currentYear = today.getFullYear();
-let currentMonth = today.getMonth();
-let allTasks = [];
-let allUsers = [];
-let currentUser = null;
-let token = null;
-let selectedDay = null;
-let editingTaskId = null;
-let editingUserId = null;
-let activeUserFilter = '';
+const COLS=[
+  {id:'pendiente',   label:'Pendiente',   icon:'⏳'},
+  {id:'en_progreso', label:'En Progreso', icon:'🔄'},
+  {id:'completada',  label:'Completada',  icon:'✅'},
+  {id:'cancelada',   label:'Cancelada',   icon:'🚫'},
+];
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass = document.getElementById('login-pass').value;
-  const errEl = document.getElementById('login-error');
-  const btn = document.getElementById('login-btn');
-  errEl.style.display = 'none';
-  btn.textContent = 'Ingresando...'; btn.disabled = true;
-  try {
-    const r = await fetch(API + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
-    const data = await r.json();
-    if (!r.ok) { errEl.textContent = data.error || 'Error al ingresar'; errEl.style.display='block'; return; }
-    token = data.token;
-    currentUser = data.user;
-    localStorage.setItem('syc_token', token);
-    startApp();
-  } catch(e) {
-    errEl.textContent = 'Error de conexión con el servidor'; errEl.style.display='block';
-  } finally { btn.textContent = 'Ingresar'; btn.disabled = false; }
+async function doLogin(){
+  const email=v('login-email').trim(), pass=v('login-pass');
+  const errEl=el('login-err'), btn=el('login-btn');
+  errEl.style.display='none'; btn.textContent='Ingresando...'; btn.disabled=true;
+  try{
+    const r=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(!r.ok){errEl.textContent=d.error||'Error'; errEl.style.display='block'; return;}
+    token=d.token; currentUser=d.user; localStorage.setItem('syc_token',token); startApp();
+  }catch{errEl.textContent='Error de conexión con el servidor'; errEl.style.display='block';}
+  finally{btn.textContent='Ingresar'; btn.disabled=false;}
 }
 
-async function tryAutoLogin() {
-  const saved = localStorage.getItem('syc_token');
-  if (!saved) return false;
-  try {
-    const r = await fetch(API + '/auth/me', { headers:{'Authorization':'Bearer '+saved} });
-    if (!r.ok) { localStorage.removeItem('syc_token'); return false; }
-    token = saved; currentUser = await r.json(); return true;
-  } catch { return false; }
+async function tryAutoLogin(){
+  const saved=localStorage.getItem('syc_token'); if(!saved)return false;
+  try{
+    const r=await fetch(API+'/auth/me',{headers:{'Authorization':'Bearer '+saved}});
+    if(!r.ok){localStorage.removeItem('syc_token');return false;}
+    token=saved; currentUser=await r.json(); return true;
+  }catch{return false;}
 }
 
-function doLogout() {
-  localStorage.removeItem('syc_token');
-  token = null; currentUser = null; allUsers = [];
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-error').style.display = 'none';
+function doLogout(){
+  localStorage.removeItem('syc_token'); token=null; currentUser=null; allUsers=[];
+  el('app-screen').style.display='none'; el('login-screen').style.display='flex';
+  el('login-pass').value=''; el('login-err').style.display='none';
+  el('user-drop').classList.remove('open');
 }
 
-async function startApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-screen').style.display = 'block';
-  // Sidebar user info
-  document.getElementById('sidebar-name').textContent = currentUser.full_name;
-  document.getElementById('sidebar-role').textContent = {admin:'⚡ Administrador', user:'👤 Usuario', viewer:'👁 Visualizador'}[currentUser.role] || currentUser.role;
-  // Show/hide nav items
-  if (currentUser.role === 'admin') {
-    document.getElementById('nav-users').classList.remove('hidden');
-    document.getElementById('nav-audit').classList.remove('hidden');
+function toggleDrop(){el('user-drop').classList.toggle('open');}
+document.addEventListener('click',e=>{if(!el('user-chip')?.contains(e.target))el('user-drop')?.classList.remove('open');});
+
+async function startApp(){
+  el('login-screen').style.display='none';
+  el('app-screen').style.display='flex'; el('app-screen').style.flexDirection='column';
+  el('topbar-av').textContent=currentUser.full_name.charAt(0).toUpperCase();
+  el('topbar-name').textContent=currentUser.full_name.split(' ')[0];
+  el('dd-name').textContent=currentUser.full_name;
+  el('dd-email').textContent=currentUser.email;
+  const isSA=isSuperAdmin();
+  if(isAdmin()||isSA){el('nav-users').classList.remove('hidden'); el('nav-audit').classList.remove('hidden');}
+  if(isSA){
+    el('audit-delete-sel-btn').classList.remove('hidden');
+    el('audit-delete-all-btn').classList.remove('hidden');
+    el('select-all-label').classList.remove('hidden');
   }
-  // Load users list (needed for filters)
   await loadUsers();
-  loadDashboard();
+  loadBoard();
 }
 
-// ── API helper ────────────────────────────────────────────────────────────────
-async function apiFetch(path, opts = {}) {
-  const headers = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
-  const r = await fetch(API + path, { ...opts, headers: { ...headers, ...(opts.headers||{}) } });
-  if (r.status === 401) { doLogout(); return null; }
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const el=id=>document.getElementById(id);
+const v=id=>el(id)?.value||'';
+const escH=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const canWrite=()=>currentUser?.role!=='viewer';
+const isAdmin=()=>['admin','superadmin'].includes(currentUser?.role);
+const isSuperAdmin=()=>currentUser?.email===window._superAdminEmail||currentUser?.role==='superadmin';
+const statusLabel=s=>({pendiente:'Pendiente',en_progreso:'En Progreso',completada:'Completada',cancelada:'Cancelada'}[s]||s);
+const nextStatus=s=>({pendiente:'en_progreso',en_progreso:'completada',completada:'pendiente',cancelada:'pendiente'}[s]||'pendiente');
+
+async function apiFetch(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,...(opts.headers||{})}});
+  if(r.status===401){doLogout();return null;}
   return r.json();
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
-function showPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  document.getElementById('nav-'+page).classList.add('active');
-  if (page === 'calendar') renderAnnualCalendar();
-  if (page === 'month') renderMonthView();
-  if (page === 'tasks') loadAllTasks();
-  if (page === 'users') loadUsersPage();
-  if (page === 'audit') loadAudit();
-  if (page === 'dashboard') loadDashboard();
+// Detect superadmin by fetching current user data on start
+async function loadSuperAdminStatus(){
+  const me=await apiFetch('/auth/me');
+  if(me) window._superAdminEmail=me.email;
 }
 
-const canWrite = () => currentUser?.role !== 'viewer';
-const isAdmin  = () => currentUser?.role === 'admin';
-
-function addBtn(containerId, dateStr) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  if (canWrite()) {
-    el.innerHTML = `<button class="btn btn-primary" onclick="openNewTaskModal(${dateStr?`'${dateStr}'`:''})">\
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>Nueva Tarea</button>`;
-  } else { el.innerHTML = ''; }
+// ── Nav ───────────────────────────────────────────────────────────────────────
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb-btn').forEach(b=>b.classList.remove('active'));
+  el('page-'+page).classList.add('active');
+  el('nav-'+page)?.classList.add('active');
+  if(page==='board')    loadBoard();
+  if(page==='calendar') renderAnnualCalendar();
+  if(page==='month')    renderMonthView();
+  if(page==='tasks')    loadAllTasks();
+  if(page==='charts')   loadCharts();
+  if(page==='users')    loadUsersPage();
+  if(page==='audit')    loadAudit();
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
-async function loadDashboard() {
-  document.getElementById('today-label').textContent = today.toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  addBtn('dash-add-btn');
-  if (canWrite()) {
-    document.getElementById('dash-add-btn').innerHTML += '';
-  }
-  document.getElementById('dash-add-btn').innerHTML = canWrite()
-    ? `<button class="btn btn-primary" onclick="openNewTaskModal()"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>Nueva Tarea</button>` : '';
-
-  const tasks = await apiFetch('/tasks'); if (!tasks) return;
-  allTasks = tasks;
-  document.getElementById('stat-total').textContent = tasks.length;
-  document.getElementById('stat-pending').textContent = tasks.filter(t=>t.status==='pendiente').length;
-  document.getElementById('stat-inprogress').textContent = tasks.filter(t=>t.status==='en_progreso').length;
-  document.getElementById('stat-done').textContent = tasks.filter(t=>t.status==='completada').length;
-
-  const todayTasks = tasks.filter(t => t.start_date <= todayStr && t.end_date >= todayStr);
-  document.getElementById('today-count').textContent = todayTasks.length === 0 ? 'Sin tareas hoy' : todayTasks.length === 1 ? '1 tarea programada' : `${todayTasks.length} tareas programadas`;
-  renderTodayCards(document.getElementById('today-tasks'), todayTasks);
-  checkAlerts(tasks);
+// ── Kanban ────────────────────────────────────────────────────────────────────
+async function loadBoard(){
+  el('board-sub').textContent=today.toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  el('board-add-btn').innerHTML=canWrite()?`<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>`:'';
+  const pillsEl=el('board-pills');
+  if(isAdmin()&&allUsers.length){
+    pillsEl.style.display='flex';
+    pillsEl.innerHTML=`<span class="pill ${activeUserFilter===''?'active':''}" onclick="setBoardFilter('')">Todos</span>`
+      +allUsers.map(u=>`<span class="pill ${activeUserFilter==u.id?'active':''}" onclick="setBoardFilter(${u.id})">${escH(u.full_name)}</span>`).join('');
+  }else pillsEl.style.display='none';
+  const q=activeUserFilter?`?user_id=${activeUserFilter}`:'';
+  allTasks=await apiFetch('/tasks'+q)||[];
+  checkAlerts();
+  renderKanban(allTasks);
 }
 
-async function checkAlerts() {
-  const alerts = await apiFetch('/tasks/alerts/pending'); if (!alerts) return;
-  const container = document.getElementById('alert-container');
-  container.innerHTML = '';
-  alerts.forEach(t => {
-    const d = document.createElement('div'); d.className = 'alert-banner';
-    d.innerHTML = `<span>⚠️</span><span class="ab-text"><strong>Alerta:</strong> La tarea "<strong>${escH(t.name)}</strong>"${isAdmin()&&t.user_name?' ('+escH(t.user_name)+')'  :''} vence mañana.</span><button class="ab-close" onclick="this.parentElement.remove()">×</button>`;
-    container.appendChild(d);
-  });
-}
+function setBoardFilter(uid){activeUserFilter=uid; loadBoard();}
 
-// ── Today Cards ───────────────────────────────────────────────────────────────
-function renderTodayCards(container, tasks) {
-  if (!tasks.length) {
-    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">✨</div><p>No hay tareas para hoy</p>${canWrite()?'<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>':''}</div>`;
-    return;
-  }
-  const prioOrder = {alta:0,media:1,baja:2};
-  const sorted = [...tasks].sort((a,b) => (prioOrder[a.priority]??9)-(prioOrder[b.priority]??9));
-  container.innerHTML = sorted.map(t => {
-    const isMulti = t.start_date !== t.end_date;
-    const timeStr = t.start_time ? `🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}` : (isMulti?`📅 hasta ${t.end_date}`:'Sin hora');
-    const nextSt = nextStatus(t.status);
-    const nextLabel = {pendiente:'Iniciar',en_progreso:'Completar',completada:'Reabrir',cancelada:'Reabrir'}[t.status]||'→';
-    return `<div class="today-card ${t.priority} ${t.status}" onclick="openEditModal(${t.id})">
-      <div class="today-card-header">
-        <div class="today-card-name">${escH(t.name)}</div>
-        <div class="today-card-prio ${t.priority}"></div>
+function renderKanban(tasks){
+  const wrap=el('kanban-wrap');
+  const byStatus={};
+  COLS.forEach(c=>byStatus[c.id]=tasks.filter(t=>t.status===c.id));
+  wrap.innerHTML=COLS.map(col=>{
+    const cards=byStatus[col.id]||[];
+    const addBtn=canWrite()&&col.id!=='cancelada'
+      ?`<div class="k-add"><button class="k-add-btn" onclick="openNewTaskModal(null,'${col.id}')">+ Agregar</button></div>`:'';
+    return `<div class="k-col col-${col.id}" id="col-${col.id}"
+        ondragover="onDragOver(event,'${col.id}')" ondragleave="onDragLeave(event)" ondrop="onDrop(event,'${col.id}')">
+      <div class="k-col-head">
+        <div class="k-col-title">${col.icon} ${col.label}<span class="k-count">${cards.length}</span></div>
       </div>
-      ${t.description?`<div class="today-card-desc">${escH(t.description)}</div>`:''}
-      ${(isAdmin()||currentUser.role==='viewer')&&t.user_name?`<div class="today-card-owner">👤 ${escH(t.user_name)}</div>`:''}
-      <div class="today-card-footer">
-        <span class="today-card-time">${timeStr}</span>
-        <div style="display:flex;gap:5px;align-items:center">
-          <span class="badge badge-${t.status}">${statusLabel(t.status)}</span>
-          ${canWrite()?`<button class="btn btn-sm" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();quickStatus(${t.id},'${nextSt}')">${nextLabel}</button>`:''}
-        </div>
+      <div class="k-body" id="body-${col.id}">
+        <div class="drop-zone" id="dz-${col.id}">Soltar aquí</div>
+        ${cards.map(t=>buildCard(t)).join('')}
       </div>
+      ${addBtn}
     </div>`;
   }).join('');
 }
 
-// ── Tasks List ────────────────────────────────────────────────────────────────
-function renderTasksList(container, tasks) {
-  if (!tasks.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No hay tareas</p>${canWrite()?'<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>':''}</div>`;
-    return;
+function buildCard(t){
+  const isMulti=t.start_date!==t.end_date;
+  const dateLabel=isMulti?`${t.start_date} → ${t.end_date}`:t.start_date;
+  const isOverdue=t.end_date<todayStr&&!['completada','cancelada'].includes(t.status);
+  const tomorrow=new Date(Date.now()+86400000).toISOString().split('T')[0];
+  const isDueSoon=!isOverdue&&t.end_date===tomorrow;
+  const timeStr=t.start_time?`🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}`:'';
+  return `<div class="t-card ${t.priority}" draggable="${canWrite()}"
+      ondragstart="onDragStart(event,${t.id})" ondragend="onDragEnd(event)"
+      onclick="openEditModal(${t.id})" id="tcard-${t.id}">
+    <button class="t-card-edit" onclick="event.stopPropagation();openEditModal(${t.id})">✎</button>
+    <div class="t-card-label"><div class="t-label ${t.priority}" title="${t.priority}"></div></div>
+    <div class="t-card-name">${escH(t.name)}</div>
+    ${t.description?`<div class="t-card-desc">${escH(t.description)}</div>`:''}
+    <div class="t-card-foot">
+      <span class="chip chip-date ${isOverdue?'overdue':isDueSoon?'due-soon':''}">📅 ${dateLabel}</span>
+      ${timeStr?`<span class="chip chip-date">${timeStr}</span>`:''}
+      ${isAdmin()&&t.user_name?`<span class="chip chip-user">👤 ${escH(t.user_name)}</span>`:''}
+      ${isMulti?`<span class="chip" style="background:#e6f4ff;color:#0052cc">Multi-día</span>`:''}
+    </div>
+  </div>`;
+}
+
+// ── Drag & Drop ───────────────────────────────────────────────────────────────
+function onDragStart(e,id){
+  dragTaskId=id; e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>el('tcard-'+id)?.classList.add('dragging'),0);
+  document.querySelectorAll('.drop-zone').forEach(dz=>dz.style.display='flex');
+}
+function onDragEnd(){
+  el('tcard-'+dragTaskId)?.classList.remove('dragging');
+  document.querySelectorAll('.drop-zone').forEach(dz=>{dz.style.display='none';dz.classList.remove('active');});
+  dragTaskId=null;
+}
+function onDragOver(e,colId){e.preventDefault();e.dataTransfer.dropEffect='move';el('dz-'+colId)?.classList.add('active');}
+function onDragLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.querySelectorAll('.drop-zone').forEach(dz=>dz.classList.remove('active'));}
+async function onDrop(e,newStatus){
+  e.preventDefault(); if(!dragTaskId||!canWrite())return;
+  const t=allTasks.find(t=>t.id===dragTaskId);
+  if(t&&t.status!==newStatus){await apiFetch('/tasks/'+dragTaskId,{method:'PUT',body:JSON.stringify({status:newStatus})});loadBoard();}
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+async function renderAnnualCalendar(){
+  el('cal-year').textContent=currentYear;
+  el('cal-add-btn').innerHTML=canWrite()?`<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>`:'';
+  if(isAdmin()&&allUsers.length){
+    el('cal-user-wrap').style.display='block';
+    const cur=v('cal-user-sel');
+    el('cal-user-sel').innerHTML=`<option value="">Todos</option>`+allUsers.map(u=>`<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
   }
-  container.innerHTML = tasks.map(t => {
-    const isMulti = t.start_date !== t.end_date;
-    const timeStr = t.start_time ? `🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}` : '';
-    return `<div class="task-card ${t.priority} ${t.status}" onclick="openEditModal(${t.id})">
-      <div>
-        <div class="task-name">${escH(t.name)}</div>
-        ${t.description?`<div class="task-desc">${escH(t.description)}</div>`:''}
-        <div class="task-meta">
-          <span class="badge badge-${t.priority}">${t.priority.charAt(0).toUpperCase()+t.priority.slice(1)}</span>
-          <span class="badge badge-${t.status}">${statusLabel(t.status)}</span>
-          ${timeStr?`<span class="task-time">${timeStr}</span>`:''}
-          ${isMulti?`<span class="task-multiday">${t.start_date} → ${t.end_date}</span>`:`<span class="task-time">${t.start_date}</span>`}
-          ${(isAdmin()||currentUser.role==='viewer')&&t.user_name?`<span class="task-owner">👤 ${escH(t.user_name)}</span>`:''}
-        </div>
-      </div>
-      ${canWrite()?`<div class="task-actions"><button class="btn btn-sm" onclick="event.stopPropagation();quickStatus(${t.id},'${nextStatus(t.status)}')" title="Avanzar estado">→</button></div>`:'<div></div>'}
-    </div>`;
-  }).join('');
+  const uid=v('cal-user-sel');
+  const tasks=await apiFetch(`/tasks?year=${currentYear}${uid?'&user_id='+uid:''}`)||[];
+  const byDate=buildDateIdx(tasks);
+  const grid=el('months-grid'); grid.innerHTML='';
+  for(let m=0;m<12;m++) grid.appendChild(buildMiniMonth(m,currentYear,byDate));
 }
 
-async function loadAllTasks() {
-  document.getElementById('tasks-subtitle').textContent = isAdmin() ? 'Todas las tareas del sistema' : 'Tus tareas';
-  document.getElementById('tasks-add-btn').innerHTML = canWrite()
-    ? `<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>` : '';
-
-  const pillsEl = document.getElementById('tasks-user-pills');
-  if (isAdmin() && allUsers.length) {
-    pillsEl.style.display = 'flex';
-    pillsEl.innerHTML = `<span class="user-pill ${activeUserFilter===''?'active':''}" onclick="setTaskUserFilter('')">Todos</span>`
-      + allUsers.map(u => `<span class="user-pill ${activeUserFilter==u.id?'active':''}" onclick="setTaskUserFilter(${u.id})">${escH(u.full_name)}</span>`).join('');
-  } else { pillsEl.style.display = 'none'; }
-
-  const q = activeUserFilter ? `?user_id=${activeUserFilter}` : '';
-  allTasks = await apiFetch('/tasks'+q) || [];
-  filterTasks();
-}
-
-function setTaskUserFilter(uid) {
-  activeUserFilter = uid;
-  loadAllTasks();
-}
-
-function filterTasks() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const prio = document.getElementById('filter-priority').value;
-  const status = document.getElementById('filter-status').value;
-  const filtered = allTasks.filter(t => {
-    if (q && !t.name.toLowerCase().includes(q) && !(t.description||'').toLowerCase().includes(q)) return false;
-    if (prio && t.priority !== prio) return false;
-    if (status && t.status !== status) return false;
-    return true;
-  });
-  renderTasksList(document.getElementById('all-tasks-list'), filtered);
-}
-
-async function quickStatus(id, newStatus) {
-  await apiFetch('/tasks/'+id, {method:'PUT', body:JSON.stringify({status:newStatus})});
-  loadDashboard();
-  if (document.getElementById('page-tasks').classList.contains('active')) loadAllTasks();
-}
-
-// ── Annual Calendar ───────────────────────────────────────────────────────────
-async function renderAnnualCalendar() {
-  document.getElementById('cal-year').textContent = currentYear;
-  document.getElementById('cal-add-btn').innerHTML = canWrite()
-    ? `<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>` : '';
-
-  const filterWrap = document.getElementById('cal-user-filter-wrap');
-  if (isAdmin() && allUsers.length) {
-    filterWrap.style.display = 'block';
-    const sel = document.getElementById('cal-user-filter');
-    const cur = sel.value;
-    sel.innerHTML = `<option value="">Todos los usuarios</option>`
-      + allUsers.map(u => `<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
-  }
-
-  const uid = document.getElementById('cal-user-filter').value;
-  const q = uid ? `?year=${currentYear}&user_id=${uid}` : `?year=${currentYear}`;
-  const tasks = await apiFetch('/tasks'+q) || [];
-  const byDate = buildDateIndex(tasks);
-  const grid = document.getElementById('months-grid');
-  grid.innerHTML = '';
-  for (let m = 0; m < 12; m++) grid.appendChild(buildMiniMonth(m, currentYear, byDate));
-}
-
-function buildDateIndex(tasks) {
-  const idx = {};
-  tasks.forEach(t => {
-    const start = new Date(t.start_date+'T12:00:00');
-    const end = new Date(t.end_date+'T12:00:00');
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
-      const k = d.toISOString().split('T')[0];
-      if (!idx[k]) idx[k] = [];
+function buildDateIdx(tasks){
+  const idx={};
+  tasks.forEach(t=>{
+    const s=new Date(t.start_date+'T12:00:00'),e=new Date(t.end_date+'T12:00:00');
+    for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){
+      const k=d.toISOString().split('T')[0];
+      if(!idx[k])idx[k]=[];
       idx[k].push(t);
     }
   });
   return idx;
 }
 
-function buildMiniMonth(month, year, byDate) {
-  const card = document.createElement('div');
-  const isCurrent = month === today.getMonth() && year === today.getFullYear();
-  card.className = 'month-card' + (isCurrent?' current-month':'');
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month+1, 0);
-  let startDow = (firstDay.getDay()+6)%7;
-  let html = `<div class="month-header">${MONTHS[month]}</div><div class="mini-cal"><div class="mini-cal-grid">`;
-  DAYS_SHORT.forEach(d => html += `<div class="mini-day-name">${d}</div>`);
-  for (let i = 0; i < startDow; i++) html += '<div class="mini-day other-month"></div>';
-  for (let d = 1; d <= lastDay.getDate(); d++) {
-    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dt = byDate[ds] || [];
-    const isToday = ds === todayStr;
-    const maxP = dt.find(t=>t.priority==='alta') ? 'alta' : dt.length ? dt[0].priority : '';
-    const cls = isToday ? 'today' : dt.length ? `has-task ${maxP}` : '';
-    html += `<div class="mini-day ${cls}" onclick="openDayModal('${ds}','${MONTHS[month]} ${d}, ${year}')" title="${dt.length} tarea(s)">${d}</div>`;
+function buildMiniMonth(m,year,byDate){
+  const card=document.createElement('div');
+  card.className='month-card'+(m===today.getMonth()&&year===today.getFullYear()?' current-month':'');
+  const first=new Date(year,m,1),last=new Date(year,m+1,0);
+  let dow=(first.getDay()+6)%7;
+  let html=`<div class="month-header">${MONTHS[m]} ${year}</div><div class="mini-cal"><div class="mini-grid">`;
+  DAYS_S.forEach(d=>html+=`<div class="mini-dname">${d}</div>`);
+  for(let i=0;i<dow;i++)html+='<div class="mini-day other-m"></div>';
+  for(let d=1;d<=last.getDate();d++){
+    const ds=`${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt=byDate[ds]||[];
+    const isT=ds===todayStr;
+    const maxP=dt.find(t=>t.priority==='alta')?'alta':dt.length?dt[0].priority:'';
+    html+=`<div class="mini-day${isT?' today':dt.length?' has-t '+maxP:''}" onclick="openDayModal('${ds}','${MONTHS[m]} ${d}, ${year}')" title="${dt.length} tarea(s)">${d}</div>`;
   }
-  html += '</div></div>';
-  card.innerHTML = html;
-  card.querySelector('.month-header').onclick = () => { currentMonth = month; showPage('month'); };
+  html+='</div></div>';
+  card.innerHTML=html;
+  card.querySelector('.month-header').onclick=()=>{currentMonth=m;showPage('month');};
   return card;
 }
 
-function changeYear(d) { currentYear += d; renderAnnualCalendar(); }
+function changeYear(d){currentYear+=d;renderAnnualCalendar();}
 
 // ── Month View ────────────────────────────────────────────────────────────────
-async function renderMonthView() {
-  document.getElementById('month-title').textContent = MONTHS[currentMonth] + ' ' + currentYear;
-  document.getElementById('month-add-btn').innerHTML = canWrite()
-    ? `<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>` : '';
-
-  const mFilterWrap = document.getElementById('month-user-filter-wrap');
-  if (isAdmin() && allUsers.length) {
-    mFilterWrap.style.display = 'block';
-    const sel = document.getElementById('month-user-filter');
-    const cur = sel.value;
-    sel.innerHTML = `<option value="">Todos</option>`
-      + allUsers.map(u => `<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+async function renderMonthView(){
+  el('month-title').textContent=MONTHS[currentMonth]+' '+currentYear;
+  el('month-add-btn').innerHTML=canWrite()?`<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>`:'';
+  if(isAdmin()&&allUsers.length){
+    el('month-user-wrap').style.display='block';
+    const cur=v('month-user-sel');
+    el('month-user-sel').innerHTML=`<option value="">Todos</option>`+allUsers.map(u=>`<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
   }
-
-  const uid = document.getElementById('month-user-filter').value;
-  const q = uid ? `?year=${currentYear}&user_id=${uid}` : `?year=${currentYear}`;
-  const tasks = await apiFetch('/tasks'+q) || [];
-  const byDate = buildDateIndex(tasks);
-  const grid = document.getElementById('month-view-grid');
-  let html = '';
-  DAYS_SHORT.forEach(d => html += `<div class="mv-day-name">${d}</div>`);
-  const firstDay = new Date(currentYear, currentMonth, 1);
-  const lastDay = new Date(currentYear, currentMonth+1, 0);
-  let startDow = (firstDay.getDay()+6)%7;
-  for (let i = 0; i < startDow; i++) html += '<div class="mv-cell other-month"></div>';
-  for (let d = 1; d <= lastDay.getDate(); d++) {
-    const ds = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dt = byDate[ds] || [];
-    const isToday = ds === todayStr;
-    const chips = dt.slice(0,3).map(t =>
-      `<span class="mv-task-chip ${t.priority}" onclick="event.stopPropagation();openEditModal(${t.id})" title="${escH(t.name)}">${escH(t.name)}</span>`).join('');
-    const more = dt.length > 3 ? `<div class="mv-more">+${dt.length-3} más</div>` : '';
-    html += `<div class="mv-cell${isToday?' today':''}" onclick="openDayModal('${ds}','${MONTHS[currentMonth]} ${d}, ${currentYear}')">
-      <div class="day-num">${d}</div>${chips}${more}</div>`;
+  const uid=v('month-user-sel');
+  const tasks=await apiFetch(`/tasks?year=${currentYear}${uid?'&user_id='+uid:''}`)||[];
+  const byDate=buildDateIdx(tasks);
+  let html='';
+  DAYS_S.forEach(d=>html+=`<div class="mv-dname">${d}</div>`);
+  const first=new Date(currentYear,currentMonth,1),last=new Date(currentYear,currentMonth+1,0);
+  let dow=(first.getDay()+6)%7;
+  for(let i=0;i<dow;i++)html+='<div class="mv-cell other-m"></div>';
+  for(let d=1;d<=last.getDate();d++){
+    const ds=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt=byDate[ds]||[];
+    const isT=ds===todayStr;
+    const chips=dt.slice(0,3).map(t=>`<span class="mv-chip ${t.priority}" onclick="event.stopPropagation();openEditModal(${t.id})">${escH(t.name)}</span>`).join('');
+    const more=dt.length>3?`<div class="mv-more">+${dt.length-3} más</div>`:'';
+    html+=`<div class="mv-cell${isT?' today':''}" onclick="openDayModal('${ds}','${MONTHS[currentMonth]} ${d}, ${currentYear}')"><div class="dnum">${d}</div>${chips}${more}</div>`;
   }
-  grid.innerHTML = html;
+  el('mv-grid').innerHTML=html;
 }
 
-function changeMonth(d) {
-  currentMonth += d;
-  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-  renderMonthView();
-}
+function changeMonth(d){currentMonth+=d;if(currentMonth<0){currentMonth=11;currentYear--;}if(currentMonth>11){currentMonth=0;currentYear++;}renderMonthView();}
 
 // ── Day Modal ─────────────────────────────────────────────────────────────────
-async function openDayModal(dateStr, label) {
-  selectedDay = dateStr;
-  document.getElementById('day-modal-title').textContent = '📅 ' + label;
-  const tasks = await apiFetch('/tasks?date='+dateStr) || [];
-  const cont = document.getElementById('day-modal-tasks');
-  if (!tasks.length) cont.innerHTML = `<div class="empty-state" style="padding:24px"><p>No hay tareas para este día</p></div>`;
-  else renderTasksList(cont, tasks);
-  document.getElementById('day-modal-add-btn').innerHTML = canWrite()
-    ? `<button class="btn btn-primary" onclick="openNewTaskModalForDay()">+ Nueva tarea este día</button>` : '';
-  document.getElementById('day-modal').style.display = 'flex';
+async function openDayModal(ds,label){
+  selectedDay=ds;
+  el('day-modal-title').textContent='📅 '+label;
+  const tasks=await apiFetch('/tasks?date='+ds)||[];
+  const cont=el('day-modal-tasks');
+  if(!tasks.length)cont.innerHTML=`<div style="text-align:center;padding:28px;color:var(--text2)">Sin tareas</div>`;
+  else renderSimpleTaskList(cont,tasks);
+  el('day-modal-add').innerHTML=canWrite()?`<button class="btn btn-primary" onclick="openNewTaskModalForDay()">+ Nueva tarea</button>`:'';
+  el('day-modal').style.display='flex';
 }
-function closeDayModal() { document.getElementById('day-modal').style.display='none'; selectedDay=null; }
-function openNewTaskModalForDay() { closeDayModal(); openNewTaskModal(selectedDay); }
+function closeDayModal(){el('day-modal').style.display='none';selectedDay=null;}
+function openNewTaskModalForDay(){closeDayModal();openNewTaskModal(selectedDay);}
 
-// ── Users Page ────────────────────────────────────────────────────────────────
-async function loadUsers() {
-  allUsers = await apiFetch('/users') || [];
-  return allUsers;
-}
-
-async function loadUsersPage() {
-  await loadUsers();
-  const container = document.getElementById('users-list');
-  if (!allUsers.length) { container.innerHTML = '<div class="empty-state"><p>No hay usuarios</p></div>'; return; }
-  container.innerHTML = `<table class="users-table">
-    <thead><tr><th></th><th>RUT</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${allUsers.map(u => `<tr>
-      <td><div class="user-avatar">${u.full_name.charAt(0).toUpperCase()}</div></td>
-      <td style="font-family:var(--mono);font-size:12px">${escH(u.rut)}</td>
-      <td style="font-weight:500">${escH(u.full_name)}</td>
-      <td style="color:var(--text2)">${escH(u.phone||'—')}</td>
-      <td style="color:var(--text2)">${escH(u.email)}</td>
-      <td><span class="badge badge-${u.role}">${{admin:'⚡ Admin',user:'👤 Usuario',viewer:'👁 Viewer'}[u.role]||u.role}</span></td>
-      <td><span class="badge" style="${u.active?'background:var(--baja-bg);color:var(--baja)':'background:var(--alta-bg);color:var(--alta)'}">${u.active?'Activo':'Inactivo'}</span></td>
-      <td><button class="btn btn-sm btn-ghost" onclick="openEditUserModal(${u.id})">Editar</button></td>
-    </tr>`).join('')}</tbody></table>`;
-}
-
-function openNewUserModal() {
-  editingUserId = null;
-  document.getElementById('user-modal-title').textContent = 'Nuevo Usuario';
-  document.getElementById('user-id').value = '';
-  document.getElementById('user-rut').value = '';
-  document.getElementById('user-name').value = '';
-  document.getElementById('user-phone').value = '';
-  document.getElementById('user-email').value = '';
-  document.getElementById('user-pass').value = '';
-  document.getElementById('user-role').value = 'user';
-  document.getElementById('delete-user-btn').style.display = 'none';
-  document.getElementById('pass-label').textContent = 'Contraseña * (mín. 8 caracteres)';
-  document.getElementById('pass-hint').style.display = 'none';
-  document.getElementById('user-modal-error').style.display = 'none';
-  document.getElementById('user-modal').style.display = 'flex';
-}
-
-async function openEditUserModal(id) {
-  editingUserId = id;
-  const u = allUsers.find(u=>u.id===id) || await apiFetch('/users/'+id);
-  if (!u) return;
-  document.getElementById('user-modal-title').textContent = 'Editar Usuario';
-  document.getElementById('user-id').value = u.id;
-  document.getElementById('user-rut').value = u.rut;
-  document.getElementById('user-name').value = u.full_name;
-  document.getElementById('user-phone').value = u.phone||'';
-  document.getElementById('user-email').value = u.email;
-  document.getElementById('user-pass').value = '';
-  document.getElementById('user-role').value = u.role;
-  document.getElementById('delete-user-btn').style.display = u.id === currentUser.id ? 'none' : 'inline-flex';
-  document.getElementById('pass-label').textContent = 'Nueva contraseña';
-  document.getElementById('pass-hint').style.display = 'block';
-  document.getElementById('user-modal-error').style.display = 'none';
-  document.getElementById('user-modal').style.display = 'flex';
-}
-
-function closeUserModal() { document.getElementById('user-modal').style.display='none'; editingUserId=null; }
-
-async function saveUser() {
-  const errEl = document.getElementById('user-modal-error');
-  errEl.style.display = 'none';
-  const payload = {
-    rut: document.getElementById('user-rut').value.trim(),
-    full_name: document.getElementById('user-name').value.trim(),
-    phone: document.getElementById('user-phone').value.trim(),
-    email: document.getElementById('user-email').value.trim(),
-    role: document.getElementById('user-role').value,
-    password: document.getElementById('user-pass').value || undefined
-  };
-  if (!payload.rut || !payload.full_name || !payload.email) {
-    errEl.textContent = 'RUT, nombre y email son requeridos'; errEl.style.display='block'; return;
-  }
-  if (!editingUserId && !payload.password) {
-    errEl.textContent = 'La contraseña es requerida para nuevos usuarios'; errEl.style.display='block'; return;
-  }
-  const url = editingUserId ? '/users/'+editingUserId : '/users';
-  const method = editingUserId ? 'PUT' : 'POST';
-  const data = await apiFetch(url, { method, body: JSON.stringify(payload) });
-  if (!data) return;
-  if (data.error) { errEl.textContent = data.error; errEl.style.display='block'; return; }
-  closeUserModal();
-  loadUsersPage();
-}
-
-async function deleteUser() {
-  if (!editingUserId || !confirm('¿Eliminar este usuario? Sus tareas permanecerán en el sistema.')) return;
-  const data = await apiFetch('/users/'+editingUserId, { method:'DELETE' });
-  if (data?.error) { document.getElementById('user-modal-error').textContent=data.error; document.getElementById('user-modal-error').style.display='block'; return; }
-  closeUserModal();
-  loadUsersPage();
-}
-
-// ── Task Modal ────────────────────────────────────────────────────────────────
-async function openNewTaskModal(dateStr) {
-  editingTaskId = null;
-  document.getElementById('task-modal-title').textContent = 'Nueva Tarea';
-  document.getElementById('task-id').value = '';
-  document.getElementById('task-name').value = '';
-  document.getElementById('task-desc').value = '';
-  document.getElementById('task-start-date').value = dateStr || todayStr;
-  document.getElementById('task-end-date').value = dateStr || todayStr;
-  document.getElementById('task-start-time').value = '';
-  document.getElementById('task-end-time').value = '';
-  document.getElementById('task-priority').value = 'media';
-  document.getElementById('status-group').style.display = 'none';
-  document.getElementById('delete-task-btn').style.display = 'none';
-
-  const ag = document.getElementById('assign-user-group');
-  if (isAdmin() && allUsers.length) {
-    ag.style.display = 'block';
-    document.getElementById('task-user-id').innerHTML = allUsers.map(u =>
-      `<option value="${u.id}" ${u.id===currentUser.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
-  } else { ag.style.display = 'none'; }
-
-  document.getElementById('task-modal').style.display = 'flex';
-}
-
-async function openEditModal(id) {
-  editingTaskId = id;
-  const t = await apiFetch('/tasks/'+id); if (!t) return;
-  document.getElementById('task-modal-title').textContent = 'Editar Tarea';
-  document.getElementById('task-id').value = t.id;
-  document.getElementById('task-name').value = t.name;
-  document.getElementById('task-desc').value = t.description||'';
-  document.getElementById('task-start-date').value = t.start_date;
-  document.getElementById('task-end-date').value = t.end_date;
-  document.getElementById('task-start-time').value = t.start_time||'';
-  document.getElementById('task-end-time').value = t.end_time||'';
-  document.getElementById('task-priority').value = t.priority;
-  document.getElementById('task-status').value = t.status;
-  document.getElementById('status-group').style.display = canWrite() ? 'block' : 'none';
-  document.getElementById('delete-task-btn').style.display = isAdmin() ? 'inline-flex' : 'none';
-
-  const ag = document.getElementById('assign-user-group');
-  if (isAdmin() && allUsers.length) {
-    ag.style.display = 'block';
-    document.getElementById('task-user-id').innerHTML = allUsers.map(u =>
-      `<option value="${u.id}" ${u.id===t.user_id?'selected':''}>${escH(u.full_name)}</option>`).join('');
-  } else { ag.style.display = 'none'; }
-
-  document.getElementById('task-modal').style.display = 'flex';
-}
-
-function closeTaskModal() { document.getElementById('task-modal').style.display='none'; editingTaskId=null; }
-
-async function saveTask() {
-  if (!canWrite()) return;
-  const name = document.getElementById('task-name').value.trim();
-  const start_date = document.getElementById('task-start-date').value;
-  const end_date = document.getElementById('task-end-date').value;
-  if (!name || !start_date || !end_date) { alert('Nombre y fechas son requeridos'); return; }
-  if (end_date < start_date) { alert('Fecha término no puede ser anterior a inicio'); return; }
-  const payload = {
-    name, description: document.getElementById('task-desc').value,
-    start_date, end_date,
-    start_time: document.getElementById('task-start-time').value||null,
-    end_time: document.getElementById('task-end-time').value||null,
-    priority: document.getElementById('task-priority').value,
-    status: document.getElementById('task-status').value||'pendiente',
-    user_id: isAdmin() ? parseInt(document.getElementById('task-user-id').value)||undefined : undefined
-  };
-  const url = editingTaskId ? '/tasks/'+editingTaskId : '/tasks';
-  const method = editingTaskId ? 'PUT' : 'POST';
-  await apiFetch(url, { method, body: JSON.stringify(payload) });
-  closeTaskModal();
-  loadDashboard();
-  if (document.getElementById('page-tasks').classList.contains('active')) loadAllTasks();
-  if (document.getElementById('page-calendar').classList.contains('active')) renderAnnualCalendar();
-  if (document.getElementById('page-month').classList.contains('active')) renderMonthView();
-}
-
-async function deleteTask() {
-  if (!isAdmin() || !editingTaskId || !confirm('¿Eliminar esta tarea?')) return;
-  await apiFetch('/tasks/'+editingTaskId, { method:'DELETE' });
-  closeTaskModal();
-  loadDashboard();
-  if (document.getElementById('page-tasks').classList.contains('active')) loadAllTasks();
-}
-
-// ── Change Password ───────────────────────────────────────────────────────────
-function showChangePassword() {
-  document.getElementById('chpass-current').value = '';
-  document.getElementById('chpass-new').value = '';
-  document.getElementById('chpass-confirm').value = '';
-  document.getElementById('chpass-error').style.display = 'none';
-  document.getElementById('chpass-success').style.display = 'none';
-  document.getElementById('chpass-modal').style.display = 'flex';
-}
-async function changePassword() {
-  const curr = document.getElementById('chpass-current').value;
-  const nw = document.getElementById('chpass-new').value;
-  const conf = document.getElementById('chpass-confirm').value;
-  const errEl = document.getElementById('chpass-error');
-  errEl.style.display = 'none';
-  document.getElementById('chpass-success').style.display = 'none';
-  if (nw !== conf) { errEl.textContent = 'Las contraseñas no coinciden'; errEl.style.display='block'; return; }
-  if (nw.length < 8) { errEl.textContent = 'Mínimo 8 caracteres'; errEl.style.display='block'; return; }
-  const data = await apiFetch('/auth/change-password', { method:'POST', body:JSON.stringify({current_password:curr,new_password:nw}) });
-  if (data?.error) { errEl.textContent = data.error; errEl.style.display='block'; return; }
-  document.getElementById('chpass-success').style.display = 'block';
-  document.getElementById('chpass-current').value = '';
-  document.getElementById('chpass-new').value = '';
-  document.getElementById('chpass-confirm').value = '';
-}
-
-// ── Audit ─────────────────────────────────────────────────────────────────────
-async function loadAudit() {
-  const logs = await apiFetch('/audit') || [];
-  const container = document.getElementById('audit-list');
-  if (!logs.length) { container.innerHTML = '<div class="empty-state"><p>Sin registros</p></div>'; return; }
-  container.innerHTML = logs.map(l => {
-    let desc = '';
-    try {
-      if (l.action==='LOGIN') desc = `Inicio de sesión`;
-      else if (l.action==='CREATE' && l.new_data) { const d=JSON.parse(l.new_data); desc=`Tarea creada: "${escH(d.name)}"`; }
-      else if (l.action==='UPDATE' && l.new_data) { const d=JSON.parse(l.new_data); desc=`Tarea actualizada: "${escH(d.name)}" → ${d.status}`; }
-      else if (l.action==='DELETE' && l.old_data) { const d=JSON.parse(l.old_data); desc=`Tarea eliminada: "${escH(d.name)}"`; }
-      else if (l.action.includes('USER')) { desc = l.action.replace('_USER','')+' usuario'; }
-    } catch {}
-    return `<div class="audit-item">
-      <span class="audit-action audit-${l.action}">${l.action}</span>
-      <div class="audit-text">${desc} ${l.actor_name?`<span style="color:var(--text3)">por ${escH(l.actor_name)}</span>`:''}</div>
-      <span class="audit-time">${l.timestamp}</span>
+// ── Tasks List ────────────────────────────────────────────────────────────────
+function renderSimpleTaskList(cont,tasks){
+  cont.innerHTML=tasks.map(t=>{
+    const isM=t.start_date!==t.end_date;
+    const time=t.start_time?`🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}`:'';
+    const border=t.priority==='alta'?'var(--alta)':t.priority==='media'?'var(--media)':'var(--baja)';
+    return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;margin-bottom:7px;cursor:pointer;border-left:3px solid ${border}" onclick="openEditModal(${t.id})">
+      <div style="font-size:14px;font-weight:600;margin-bottom:3px">${escH(t.name)}</div>
+      ${t.description?`<div style="font-size:12px;color:var(--text2);margin-bottom:5px">${escH(t.description)}</div>`:''}
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge badge-${t.priority}">${t.priority}</span>
+        <span class="badge badge-${t.status}">${statusLabel(t.status)}</span>
+        ${time?`<span class="chip chip-date">${time}</span>`:''}
+        ${isM?`<span class="chip" style="background:#e6f4ff;color:#0052cc">${t.start_date} → ${t.end_date}</span>`:`<span class="chip chip-date">${t.start_date}</span>`}
+        ${isAdmin()&&t.user_name?`<span class="chip chip-user">👤 ${escH(t.user_name)}</span>`:''}
+      </div>
     </div>`;
   }).join('');
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
-function exportExcel() {
-  const a = document.createElement('a');
-  a.href = API + '/export/excel';
-  // Pass token via query not ideal but simplest for file download
-  a.href = API + '/export/excel?_t=' + token;
-  a.click();
+async function loadAllTasks(){
+  el('tasks-sub').textContent=isAdmin()?'Todas las tareas del sistema':'Tus tareas';
+  el('tasks-add-btn').innerHTML=canWrite()?`<button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva Tarea</button>`:'';
+  const pillsEl=el('tasks-pills');
+  if(isAdmin()&&allUsers.length){
+    pillsEl.style.display='flex';
+    pillsEl.innerHTML=`<span class="pill ${activeUserFilter===''?'active':''}" onclick="setTaskFilter('')">Todos</span>`
+      +allUsers.map(u=>`<span class="pill ${activeUserFilter==u.id?'active':''}" onclick="setTaskFilter(${u.id})">${escH(u.full_name)}</span>`).join('');
+  }else pillsEl.style.display='none';
+  const q=activeUserFilter?`?user_id=${activeUserFilter}`:'';
+  allTasks=await apiFetch('/tasks'+q)||[];
+  filterTasks();
 }
 
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function statusLabel(s) { return {pendiente:'Pendiente',en_progreso:'En progreso',completada:'Completada',cancelada:'Cancelada'}[s]||s; }
-function nextStatus(s) { return {pendiente:'en_progreso',en_progreso:'completada',completada:'pendiente',cancelada:'pendiente'}[s]||'pendiente'; }
-function escH(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setTaskFilter(uid){activeUserFilter=uid;loadAllTasks();}
+
+function filterTasks(){
+  const q=v('search-input').toLowerCase(), prio=v('filter-priority'), status=v('filter-status');
+  const f=allTasks.filter(t=>{
+    if(q&&!t.name.toLowerCase().includes(q)&&!(t.description||'').toLowerCase().includes(q))return false;
+    if(prio&&t.priority!==prio)return false;
+    if(status&&t.status!==status)return false;
+    return true;
+  });
+  const cont=el('all-tasks-list');
+  if(!f.length){cont.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text2)">No hay tareas${canWrite()?`<br><br><button class="btn btn-primary" onclick="openNewTaskModal()">+ Nueva</button>`:''}</div>`;return;}
+  renderSimpleTaskList(cont,f);
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+async function loadCharts(){
+  statsData=await apiFetch('/stats');
+  if(!statsData)return;
+  renderStatsSummary(statsData);
+  renderTrendChart(statsData);
+  renderStatusChart(statsData);
+  renderPriorityChart(statsData);
+  renderByUserTable(statsData);
+}
+
+function setPeriod(p){
+  currentPeriod=p;
+  document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  if(statsData)renderTrendChart(statsData);
+}
+
+function renderStatsSummary(d){
+  const byStatus={};
+  d.byStatus.forEach(s=>byStatus[s.status]=s.count);
+  const total=(d.byStatus||[]).reduce((a,s)=>a+s.count,0);
+  el('stats-summary').innerHTML=`
+    <div class="ss-card"><div class="ss-icon" style="background:#e6f0ff">📋</div><div><div class="ss-num">${total}</div><div class="ss-label">Total</div></div></div>
+    <div class="ss-card"><div class="ss-icon" style="background:#ebecf0">⏳</div><div><div class="ss-num" style="color:var(--text2)">${byStatus.pendiente||0}</div><div class="ss-label">Pendientes</div></div></div>
+    <div class="ss-card"><div class="ss-icon" style="background:var(--col-prog)">🔄</div><div><div class="ss-num" style="color:var(--blue)">${byStatus.en_progreso||0}</div><div class="ss-label">En Progreso</div></div></div>
+    <div class="ss-card"><div class="ss-icon" style="background:var(--col-done)">✅</div><div><div class="ss-num" style="color:var(--baja)">${byStatus.completada||0}</div><div class="ss-label">Completadas</div></div></div>`;
+}
+
+function renderTrendChart(d){
+  const data=currentPeriod==='week'?d.byWeek:currentPeriod==='month'?d.byMonth:d.byYear;
+  const labels=data.map(r=>r.period);
+  el('trend-title').textContent=currentPeriod==='week'?'Tendencia por Semana':currentPeriod==='month'?'Tendencia por Mes':'Tendencia por Año';
+  destroyChart('chart-trend');
+  chartInstances['chart-trend']=new Chart(el('chart-trend'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Total',data:data.map(r=>r.total),backgroundColor:'rgba(0,82,204,.18)',borderColor:'var(--blue)',borderWidth:2,borderRadius:5},
+        {label:'Completadas',data:data.map(r=>r.completada),backgroundColor:'rgba(54,179,126,.25)',borderColor:'var(--baja)',borderWidth:2,borderRadius:5},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+}
+
+function renderStatusChart(d){
+  const colors={'pendiente':'#ebecf0','en_progreso':'#cce0ff','completada':'#b3f0d1','cancelada':'#ffccc7'};
+  const borderColors={'pendiente':'#97a0af','en_progreso':'#0052cc','completada':'#36b37e','cancelada':'#de350b'};
+  destroyChart('chart-status');
+  chartInstances['chart-status']=new Chart(el('chart-status'),{
+    type:'doughnut',
+    data:{
+      labels:d.byStatus.map(s=>statusLabel(s.status)),
+      datasets:[{data:d.byStatus.map(s=>s.count),backgroundColor:d.byStatus.map(s=>colors[s.status]||'#eee'),borderColor:d.byStatus.map(s=>borderColors[s.status]||'#ccc'),borderWidth:2}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}
+  });
+}
+
+function renderPriorityChart(d){
+  const colors={alta:'rgba(222,53,11,.2)',media:'rgba(255,139,0,.2)',baja:'rgba(54,179,126,.2)'};
+  const border={alta:'var(--alta)',media:'var(--media)',baja:'var(--baja)'};
+  destroyChart('chart-priority');
+  chartInstances['chart-priority']=new Chart(el('chart-priority'),{
+    type:'doughnut',
+    data:{
+      labels:d.byPriority.map(p=>p.priority.charAt(0).toUpperCase()+p.priority.slice(1)),
+      datasets:[{data:d.byPriority.map(p=>p.count),backgroundColor:d.byPriority.map(p=>colors[p.priority]||'#eee'),borderColor:d.byPriority.map(p=>border[p.priority]||'#ccc'),borderWidth:2}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}
+  });
+}
+
+function renderByUserTable(d){
+  const card=el('by-user-card');
+  if(!isAdmin()||!d.byUser.length){card.style.display='none';return;}
+  card.style.display='block';
+  const table=el('by-user-table');
+  table.innerHTML=`<thead><tr><th>Usuario</th><th>Total</th><th>Pendiente</th><th>En Progreso</th><th>Completada</th><th>Cancelada</th><th>% Completado</th></tr></thead><tbody>`
+    +d.byUser.map(u=>{
+      const pct=u.total>0?Math.round((u.completada/u.total)*100):0;
+      return `<tr>
+        <td style="font-weight:600">${escH(u.full_name)}</td>
+        <td style="font-weight:700;color:var(--blue)">${u.total}</td>
+        <td><span class="badge badge-pendiente">${u.pendiente}</span></td>
+        <td><span class="badge badge-en_progreso">${u.en_progreso}</span></td>
+        <td><span class="badge badge-completada">${u.completada}</span></td>
+        <td><span class="badge badge-cancelada">${u.cancelada}</span></td>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+          <span style="font-size:12px;font-weight:600;color:var(--blue)">${pct}%</span>
+        </div></td>
+      </tr>`;
+    }).join('')+'</tbody>';
+}
+
+function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];}}
+
+async function exportChartsPDF(){
+  // Use browser print with print styles
+  const style=document.createElement('style');
+  style.id='print-style';
+  style.textContent=`@media print{body>*:not(#app-screen){display:none!important}#app-screen>div:not(#page-charts){display:none!important}.topbar,.ph,.ha{display:none!important}#page-charts{display:block!important}.scroll-area{overflow:visible!important;height:auto!important}.charts-grid{page-break-inside:avoid}}`;
+  document.head.appendChild(style);
+  showPage('charts');
+  await new Promise(r=>setTimeout(r,800));
+  window.print();
+  setTimeout(()=>{const s=el('print-style');if(s)s.remove();},1000);
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+async function loadUsers(){allUsers=await apiFetch('/users')||[];return allUsers;}
+
+async function loadUsersPage(){
+  await loadUsers();
+  const cont=el('users-list');
+  if(!allUsers.length){cont.innerHTML='<div style="padding:32px;text-align:center;color:var(--text2)">Sin usuarios</div>';return;}
+  cont.innerHTML=`<table class="u-table"><thead><tr><th></th><th>RUT</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>`
+    +allUsers.map(u=>`<tr>
+      <td><div class="u-av">${u.full_name.charAt(0).toUpperCase()}</div></td>
+      <td style="font-size:12px;color:var(--text2)">${escH(u.rut)}</td>
+      <td style="font-weight:600">${escH(u.full_name)}</td>
+      <td style="color:var(--text2)">${escH(u.phone||'—')}</td>
+      <td style="color:var(--text2)">${escH(u.email)}</td>
+      <td><span class="badge badge-${u.role}">${{admin:'⚡ Admin',user:'👤 Usuario',viewer:'👁 Viewer',superadmin:'🔒 SuperAdmin'}[u.role]||u.role}</span></td>
+      <td><span class="badge" style="${u.active?'background:#e3fcef;color:#006644':'background:var(--alta-bg);color:var(--alta)'}">${u.active?'Activo':'Inactivo'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openEditUserModal(${u.id})">Editar</button></td>
+    </tr>`).join('')+'</tbody></table>';
+}
+
+function openNewUserModal(){
+  editingUserId=null;
+  el('user-modal-title').textContent='Nuevo Usuario';
+  ['user-id','user-rut','user-name','user-phone','user-email','user-pass'].forEach(id=>el(id).value='');
+  el('user-role').value='user';
+  el('del-user-btn').style.display='none';
+  el('pass-label').textContent='Contraseña * (mín. 8 caracteres)';
+  el('pass-hint').style.display='none';
+  el('user-modal-err').style.display='none';
+  el('user-modal').style.display='flex';
+}
+
+async function openEditUserModal(id){
+  editingUserId=id;
+  const u=allUsers.find(u=>u.id===id)||await apiFetch('/users/'+id);if(!u)return;
+  el('user-modal-title').textContent='Editar Usuario';
+  el('user-id').value=u.id; el('user-rut').value=u.rut; el('user-name').value=u.full_name;
+  el('user-phone').value=u.phone||''; el('user-email').value=u.email; el('user-pass').value=''; el('user-role').value=u.role;
+  el('del-user-btn').style.display=u.id===currentUser.id?'none':'inline-flex';
+  el('pass-label').textContent='Nueva contraseña'; el('pass-hint').style.display='block';
+  el('user-modal-err').style.display='none'; el('user-modal').style.display='flex';
+}
+
+function closeUserModal(){el('user-modal').style.display='none';editingUserId=null;}
+
+async function saveUser(){
+  const errEl=el('user-modal-err'); errEl.style.display='none';
+  const payload={rut:v('user-rut').trim(),full_name:v('user-name').trim(),phone:v('user-phone').trim(),email:v('user-email').trim(),role:v('user-role'),password:v('user-pass')||undefined};
+  if(!payload.rut||!payload.full_name||!payload.email){errEl.textContent='RUT, nombre y email requeridos';errEl.style.display='block';return;}
+  if(!editingUserId&&!payload.password){errEl.textContent='Contraseña requerida para nuevos usuarios';errEl.style.display='block';return;}
+  const data=await apiFetch(editingUserId?'/users/'+editingUserId:'/users',{method:editingUserId?'PUT':'POST',body:JSON.stringify(payload)});
+  if(!data)return;
+  if(data.error){errEl.textContent=data.error;errEl.style.display='block';return;}
+  closeUserModal();loadUsersPage();
+}
+
+async function deleteUser(){
+  if(!editingUserId||!confirm('¿Eliminar este usuario?'))return;
+  const d=await apiFetch('/users/'+editingUserId,{method:'DELETE'});
+  if(d?.error){el('user-modal-err').textContent=d.error;el('user-modal-err').style.display='block';return;}
+  closeUserModal();loadUsersPage();
+}
+
+// ── Task Modal ────────────────────────────────────────────────────────────────
+async function openNewTaskModal(dateStr,initialStatus){
+  editingTaskId=null;
+  el('task-modal-title').textContent='Nueva Tarea';
+  el('task-id').value=''; el('task-name').value=''; el('task-desc').value='';
+  el('task-start-date').value=dateStr||todayStr; el('task-end-date').value=dateStr||todayStr;
+  el('task-start-time').value=''; el('task-end-time').value='';
+  el('task-priority').value='media'; el('task-status').value=initialStatus||'pendiente';
+  el('status-group').style.display='none'; el('delete-task-btn').style.display='none';
+  el('save-task-btn').style.display='inline-flex';
+  if(isAdmin()&&allUsers.length){
+    el('assign-user-group').style.display='block';
+    el('task-user-id').innerHTML=allUsers.map(u=>`<option value="${u.id}" ${u.id===currentUser.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+  }else el('assign-user-group').style.display='none';
+  el('task-modal').style.display='flex';
+}
+
+async function openEditModal(id){
+  editingTaskId=id;
+  const t=await apiFetch('/tasks/'+id);if(!t)return;
+  el('task-modal-title').textContent='Editar Tarea';
+  el('task-id').value=t.id; el('task-name').value=t.name; el('task-desc').value=t.description||'';
+  el('task-start-date').value=t.start_date; el('task-end-date').value=t.end_date;
+  el('task-start-time').value=t.start_time||''; el('task-end-time').value=t.end_time||'';
+  el('task-priority').value=t.priority; el('task-status').value=t.status;
+  el('status-group').style.display=canWrite()?'block':'none';
+  el('delete-task-btn').style.display=isAdmin()?'inline-flex':'none';
+  el('save-task-btn').style.display=canWrite()?'inline-flex':'none';
+  if(isAdmin()&&allUsers.length){
+    el('assign-user-group').style.display='block';
+    el('task-user-id').innerHTML=allUsers.map(u=>`<option value="${u.id}" ${u.id===t.user_id?'selected':''}>${escH(u.full_name)}</option>`).join('');
+  }else el('assign-user-group').style.display='none';
+  el('task-modal').style.display='flex';
+}
+
+function closeTaskModal(){el('task-modal').style.display='none';editingTaskId=null;}
+
+async function saveTask(){
+  if(!canWrite())return;
+  const name=v('task-name').trim(),sd=v('task-start-date'),ed=v('task-end-date');
+  if(!name||!sd||!ed){alert('Nombre y fechas requeridos');return;}
+  if(ed<sd){alert('Fecha término no puede ser anterior al inicio');return;}
+  const payload={name,description:v('task-desc'),start_date:sd,end_date:ed,start_time:v('task-start-time')||null,end_time:v('task-end-time')||null,priority:v('task-priority'),status:v('task-status')||'pendiente',user_id:isAdmin()?parseInt(v('task-user-id'))||undefined:undefined};
+  await apiFetch(editingTaskId?'/tasks/'+editingTaskId:'/tasks',{method:editingTaskId?'PUT':'POST',body:JSON.stringify(payload)});
+  closeTaskModal(); loadBoard();
+  if(el('page-tasks').classList.contains('active'))loadAllTasks();
+  if(el('page-calendar').classList.contains('active'))renderAnnualCalendar();
+  if(el('page-month').classList.contains('active'))renderMonthView();
+}
+
+async function deleteTask(){
+  if(!isAdmin()||!editingTaskId||!confirm('¿Eliminar esta tarea?'))return;
+  await apiFetch('/tasks/'+editingTaskId,{method:'DELETE'});
+  closeTaskModal();loadBoard();
+  if(el('page-tasks').classList.contains('active'))loadAllTasks();
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+async function checkAlerts(){
+  const alerts=await apiFetch('/tasks/alerts/pending')||[];
+  const cont=el('alert-container');cont.innerHTML='';
+  alerts.slice(0,1).forEach(t=>{
+    const d=document.createElement('div');d.className='alert-banner';
+    d.innerHTML=`⚠️ <span><strong>"${escH(t.name)}"</strong> vence mañana</span><button onclick="this.parentElement.remove()">×</button>`;
+    cont.appendChild(d);
+  });
+}
+
+// ── Audit ─────────────────────────────────────────────────────────────────────
+async function loadAudit(){
+  selectedAuditIds=new Set();
+  const action=v('audit-filter-action'),uid=v('audit-filter-user'),from=v('audit-from'),to=v('audit-to');
+  let q=[];
+  if(action)q.push('action='+action);
+  if(uid)q.push('user_id='+uid);
+  if(from)q.push('from='+from);
+  if(to)q.push('to='+to);
+  const logs=await apiFetch('/audit'+(q.length?'?'+q.join('&'):''))||[];
+  el('audit-count').textContent=`${logs.length} registros`;
+  // Populate user filter
+  const auditUsers=[...new Map(logs.filter(l=>l.user_id).map(l=>[l.user_id,{id:l.user_id,name:l.actor_name}])).values()];
+  const curU=v('audit-filter-user');
+  el('audit-filter-user').innerHTML=`<option value="">Todos los usuarios</option>`+auditUsers.map(u=>`<option value="${u.id}" ${curU==u.id?'selected':''}>${escH(u.name||'—')}</option>`).join('');
+  const cont=el('audit-list');
+  if(!logs.length){cont.innerHTML='<div style="padding:28px;text-align:center;color:var(--text2)">Sin registros</div>';return;}
+  cont.innerHTML=logs.map(l=>{
+    let desc='';
+    try{
+      if(l.action==='LOGIN')desc='Inicio de sesión';
+      else if(l.action==='CREATE'&&l.new_data){const d=JSON.parse(l.new_data);desc=`Tarea creada: "${escH(d.name)}"`;}
+      else if(l.action==='UPDATE'&&l.new_data){const d=JSON.parse(l.new_data);desc=`Tarea actualizada: "${escH(d.name)}" → ${statusLabel(d.status)}`;}
+      else if(l.action==='DELETE'&&l.old_data){const d=JSON.parse(l.old_data);desc=`Tarea eliminada: "${escH(d.name)}"`;}
+      else if(l.action.includes('USER'))desc=l.action.replace('_',' ').toLowerCase()+' usuario';
+    }catch{}
+    const canDel=isSuperAdmin();
+    return `<div class="audit-row" id="arow-${l.id}">
+      ${canDel?`<input type="checkbox" class="a-check" onchange="toggleAuditSelect(${l.id},this.checked)">`:`<span></span>`}
+      <span class="a-badge a-${l.action}">${l.action}</span>
+      <div><div class="a-text">${desc}</div>${l.actor_name?`<div class="a-actor">por ${escH(l.actor_name)}</div>`:''}</div>
+      <span class="a-time">${l.timestamp}</span>
+      ${canDel?`<button class="btn btn-danger btn-sm" onclick="deleteAuditRow(${l.id})">✕</button>`:`<span></span>`}
+    </div>`;
+  }).join('');
+}
+
+function toggleAuditSelect(id,checked){
+  if(checked)selectedAuditIds.add(id);
+  else selectedAuditIds.delete(id);
+  el('audit-delete-sel-btn').textContent=`🗑 Borrar selección (${selectedAuditIds.size})`;
+}
+
+function toggleSelectAll(){
+  const checked=el('audit-select-all').checked;
+  document.querySelectorAll('.a-check').forEach(cb=>{cb.checked=checked;toggleAuditSelect(parseInt(cb.closest('.audit-row').id.replace('arow-','')),checked);});
+}
+
+async function deleteAuditRow(id){
+  if(!confirm('¿Borrar este registro de auditoría?'))return;
+  await apiFetch('/audit/'+id,{method:'DELETE'});
+  loadAudit();
+}
+
+async function deleteSelectedAudit(){
+  if(!selectedAuditIds.size){alert('Selecciona al menos un registro');return;}
+  if(!confirm(`¿Borrar ${selectedAuditIds.size} registros seleccionados?`))return;
+  await apiFetch('/audit/bulk',{method:'DELETE',body:JSON.stringify({ids:[...selectedAuditIds]})});
+  selectedAuditIds=new Set(); loadAudit();
+}
+
+async function deleteAllAudit(){
+  if(!confirm('¿Borrar TODO el registro de auditoría? Esta acción es irreversible.'))return;
+  await apiFetch('/audit/all',{method:'DELETE'});
+  loadAudit();
+}
+
+// ── Misc ──────────────────────────────────────────────────────────────────────
+function showChangePwd(){
+  ['chpwd-cur','chpwd-new','chpwd-conf'].forEach(id=>el(id).value='');
+  el('chpwd-err').style.display='none'; el('chpwd-ok').style.display='none';
+  el('chpwd-modal').style.display='flex'; el('user-drop').classList.remove('open');
+}
+
+async function changePassword(){
+  const cur=v('chpwd-cur'),nw=v('chpwd-new'),conf=v('chpwd-conf');
+  const err=el('chpwd-err');err.style.display='none';el('chpwd-ok').style.display='none';
+  if(nw!==conf){err.textContent='Las contraseñas no coinciden';err.style.display='block';return;}
+  if(nw.length<8){err.textContent='Mínimo 8 caracteres';err.style.display='block';return;}
+  const d=await apiFetch('/auth/change-password',{method:'POST',body:JSON.stringify({current_password:cur,new_password:nw})});
+  if(d?.error){err.textContent=d.error;err.style.display='block';return;}
+  el('chpwd-ok').style.display='block';
+  ['chpwd-cur','chpwd-new','chpwd-conf'].forEach(id=>el(id).value='');
+}
+
+function exportExcel(){const a=document.createElement('a');a.href=API+'/export/excel?_t='+token;a.click();}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-(async () => {
-  const ok = await tryAutoLogin();
-  if (ok) startApp();
+(async()=>{
+  // Pre-load superadmin email from env via a dedicated endpoint or detect via login
+  window._superAdminEmail=null;
+  const ok=await tryAutoLogin();
+  if(ok){window._superAdminEmail=currentUser.email;startApp();}
 })();
 </script>
 </body>
