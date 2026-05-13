@@ -659,8 +659,12 @@ async function loadBoard(){
   }else pillsEl.style.display='none';
   const q=activeUserFilter?`?user_id=${activeUserFilter}`:'';
   allTasks=await apiFetch('/tasks'+q)||[];
+  // Board only shows: non-completed tasks + tasks completed TODAY
+  const boardTasks = allTasks.filter(t =>
+    t.status !== 'completada' || (t.completed_at && t.completed_at.slice(0,10) === todayStr)
+  );
   checkAlerts();
-  renderKanban(allTasks);
+  renderKanban(boardTasks);
 }
 
 function setBoardFilter(uid){activeUserFilter=uid; loadBoard();}
