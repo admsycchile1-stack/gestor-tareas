@@ -659,10 +659,13 @@ async function loadBoard(){
   }else pillsEl.style.display='none';
   const q=activeUserFilter?`?user_id=${activeUserFilter}`:'';
   allTasks=await apiFetch('/tasks'+q)||[];
-  // Board only shows: non-completed tasks + tasks completed TODAY
-  const boardTasks = allTasks.filter(t =>
-    t.status !== 'completada' || (t.completed_at && t.completed_at.slice(0,10) === todayStr)
-  );
+  // Board shows: all non-completed tasks + tasks completed TODAY
+  // Tasks completed on a PREVIOUS day are hidden from board (visible in calendar/list)
+  const boardTasks = allTasks.filter(t => {
+    if (t.status !== 'completada') return true;
+    if (!t.completed_at) return true; // no timestamp yet, keep visible
+    return t.completed_at.slice(0,10) === todayStr; // only today's completed
+  });
   checkAlerts();
   renderKanban(boardTasks);
 }
@@ -728,8 +731,24 @@ function handleCardClick(e, taskId) {
   openEditModal(taskId);
 }
 
+function cleanupDrag() {
+  if (!dragState) return;
+  dragState.ghost.remove();
+  if (dragState.card) {
+    dragState.card.style.opacity = '';
+    dragState.card.style.cursor = '';
+  }
+  document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', onMouseUp);
+  dragState = null;
+}
+
+// Cancel drag if mouse leaves the window or tab becomes hidden
+document.addEventListener('mouseleave', () => { if (dragState) cleanupDrag(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && dragState) cleanupDrag(); });
+
 function initDragDrop() {
-  // Attach mousedown on kanban wrap via delegation
   const wrap = el('kanban-wrap');
   if (!wrap || wrap._dragInit) return;
   wrap._dragInit = true;
@@ -738,14 +757,12 @@ function initDragDrop() {
     if (!canWrite()) return;
     const card = e.target.closest('.t-card');
     if (!card) return;
-    // Don't start drag on buttons
     if (e.target.closest('button')) return;
 
     e.preventDefault();
     const taskId = parseInt(card.dataset.taskId);
     const rect = card.getBoundingClientRect();
 
-    // Create ghost
     const ghost = card.cloneNode(true);
     ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;
       pointer-events:none;transform:rotate(2deg) scale(1.03);
@@ -757,13 +774,10 @@ function initDragDrop() {
     card.style.cursor = 'grabbing';
 
     dragState = {
-      taskId,
-      ghost,
-      card,
+      taskId, ghost, card,
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
       moved: false,
-      originStatus: allTasks.find(t=>t.id===taskId)?.status
     };
 
     document.addEventListener('mousemove', onMouseMove);
@@ -773,47 +787,46 @@ function initDragDrop() {
 
 function onMouseMove(e) {
   if (!dragState) return;
-  dragState.moved = true;
+  // Need at least 4px of movement to count as a drag (avoids accidental drags on click)
+  if (!dragState.moved) {
+    const dx = Math.abs(e.clientX - (dragState.ghost.getBoundingClientRect().left + dragState.offsetX));
+    const dy = Math.abs(e.clientY - (dragState.ghost.getBoundingClientRect().top  + dragState.offsetY));
+    if (dx < 4 && dy < 4) return;
+    dragState.moved = true;
+  }
   const {ghost, offsetX, offsetY} = dragState;
   ghost.style.left = (e.clientX - offsetX) + 'px';
   ghost.style.top  = (e.clientY - offsetY) + 'px';
 
-  // Highlight hovered column
   document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
-  const target = document.elementFromPoint(e.clientX, e.clientY);
+  // Use ghost's center to detect column, not cursor (avoids edge issues)
+  const cx = e.clientX, cy = e.clientY;
+  ghost.style.display = 'none';
+  const target = document.elementFromPoint(cx, cy);
+  ghost.style.display = '';
   const col = target?.closest('.k-col');
   if (col) col.classList.add('drag-over');
 }
 
 async function onMouseUp(e) {
-  document.removeEventListener('mousemove', onMouseMove);
-  document.removeEventListener('mouseup', onMouseUp);
-
   if (!dragState) return;
-  const {taskId, ghost, card, moved} = dragState;
+  const {taskId, moved} = dragState;
+  const col = (() => {
+    dragState.ghost.style.display = 'none';
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    dragState.ghost.style.display = '';
+    return t?.closest('.k-col');
+  })();
+  const newStatus = col?.id?.replace('col-', '');
+  cleanupDrag();
 
-  // Cleanup visual
-  ghost.remove();
-  card.style.opacity = '';
-  card.style.cursor = '';
-  document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
-
-  if (moved) {
-    // Find which column the mouse is over
-    const target = document.elementFromPoint(e.clientX, e.clientY);
-    const col = target?.closest('.k-col');
-    const newStatus = col?.id?.replace('col-', '');
-
-    if (newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
-      const task = allTasks.find(t => t.id === taskId);
-      if (task && task.status !== newStatus) {
-        await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
-        loadBoard();
-      }
+  if (moved && newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
+    const task = allTasks.find(t => t.id === taskId);
+    if (task && task.status !== newStatus) {
+      await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
+      loadBoard();
     }
   }
-
-  dragState = null;
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
