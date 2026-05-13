@@ -400,6 +400,13 @@ table.u-table tr:hover td{background:var(--blue-light)}
           <div class="chart-title">Tareas por Usuario</div>
           <div style="overflow-x:auto"><table class="by-user-table" id="by-user-table"></table></div>
         </div>
+        <div class="chart-card full" id="duration-card" style="display:none">
+          <div class="chart-title">
+            <span>⏱ Tiempos de Ejecución — tareas completadas</span>
+            <span id="avg-duration-badge" style="font-size:12px;font-weight:500;color:var(--text2)"></span>
+          </div>
+          <div style="overflow-x:auto"><table class="by-user-table" id="duration-table"></table></div>
+        </div>
       </div>
     </div>
   </div>
@@ -471,6 +478,14 @@ table.u-table tr:hover td{background:var(--blue-light)}
       </div>
       <div class="fg" id="assign-user-group" style="display:none"><label class="fl">Asignar a</label><select class="fs" id="task-user-id"></select></div>
       <div class="fhint">⏰ Alerta automática 1 día antes del vencimiento</div>
+      <div id="task-timing-info" style="display:none;margin-top:12px;background:#f8f9ff;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">⏱ Registro de tiempos</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div style="font-size:11px;color:var(--text2)">▶ Inicio progreso</div><div style="font-size:13px;font-weight:600;color:#403294" id="task-started-at-display">—</div></div>
+          <div><div style="font-size:11px;color:var(--text2)">✅ Completada</div><div style="font-size:13px;font-weight:600;color:var(--baja)" id="task-completed-at-display">—</div></div>
+          <div id="task-duration-wrap" style="display:none;grid-column:1/-1"><div style="font-size:11px;color:var(--text2)">⏳ Duración total</div><div style="font-size:14px;font-weight:700;color:var(--blue)" id="task-duration-display">—</div></div>
+        </div>
+      </div>
     </div>
     <div class="m-foot">
       <button class="btn btn-danger" id="delete-task-btn" style="display:none;margin-right:auto" onclick="deleteTask()">Eliminar</button>
@@ -680,6 +695,7 @@ function buildCard(t){
   const tomorrow=new Date(Date.now()+86400000).toISOString().split('T')[0];
   const isDueSoon=!isOverdue&&t.end_date===tomorrow;
   const timeStr=t.start_time?`🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}`:'';
+  const durationStr = t.started_at && t.completed_at ? fmtDuration(t.started_at, t.completed_at) : '';
   const draggable=canWrite();
   return `<div class="t-card ${t.priority}" id="tcard-${t.id}"
       data-task-id="${t.id}"
@@ -692,8 +708,9 @@ function buildCard(t){
     <div class="t-card-foot">
       <span class="chip chip-date ${isOverdue?'overdue':isDueSoon?'due-soon':''}">📅 ${dateLabel}</span>
       ${timeStr?`<span class="chip chip-date">${timeStr}</span>`:''}
+      ${t.started_at?`<span class="chip" style="background:#ede0ff;color:#403294" title="Inicio: ${t.started_at}">▶ ${fmtTs(t.started_at)}</span>`:''}
+      ${durationStr?`<span class="chip" style="background:#e3fcef;color:#006644">⏱ ${durationStr}</span>`:''}
       ${isAdmin()&&t.user_name?`<span class="chip chip-user">👤 ${escH(t.user_name)}</span>`:''}
-      ${isMulti?`<span class="chip" style="background:#e6f4ff;color:#0052cc">Multi-día</span>`:''}
     </div>
   </div>`;
 }
@@ -949,6 +966,7 @@ async function loadCharts(){
   renderStatusChart(statsData);
   renderPriorityChart(statsData);
   renderByUserTable(statsData);
+  renderDurationTable(statsData);
 }
 
 function setPeriod(p){
@@ -1147,6 +1165,23 @@ async function openEditModal(id){
     el('assign-user-group').style.display='block';
     el('task-user-id').innerHTML=allUsers.map(u=>`<option value="${u.id}" ${u.id===t.user_id?'selected':''}>${escH(u.full_name)}</option>`).join('');
   }else el('assign-user-group').style.display='none';
+
+  // Timing info
+  const timingEl=el('task-timing-info');
+  if(t.started_at||t.completed_at){
+    timingEl.style.display='block';
+    el('task-started-at-display').textContent=t.started_at||'—';
+    el('task-completed-at-display').textContent=t.completed_at||'—';
+    if(t.started_at&&t.completed_at){
+      el('task-duration-wrap').style.display='block';
+      el('task-duration-display').textContent=fmtDuration(t.started_at,t.completed_at);
+    }else{
+      el('task-duration-wrap').style.display='none';
+    }
+  }else{
+    timingEl.style.display='none';
+  }
+
   el('task-modal').style.display='flex';
 }
 
@@ -1269,6 +1304,48 @@ async function changePassword(){
 }
 
 function exportExcel(){const a=document.createElement('a');a.href=API+'/export/excel?_t='+token;a.click();}
+
+// ── Time utils ────────────────────────────────────────────────────────────────
+function fmtTs(ts){
+  if(!ts)return'—';
+  // ts is "YYYY-MM-DD HH:MM:SS"
+  const d=new Date(ts.replace(' ','T'));
+  return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+}
+
+function fmtDuration(startTs, endTs){
+  if(!startTs||!endTs)return'';
+  const diffMs=new Date(endTs.replace(' ','T'))-new Date(startTs.replace(' ','T'));
+  if(diffMs<0)return'';
+  const totalMin=Math.floor(diffMs/60000);
+  const h=Math.floor(totalMin/60), m=totalMin%60;
+  if(h===0)return`${m}min`;
+  if(m===0)return`${h}h`;
+  return`${h}h ${m}min`;
+}
+
+function renderDurationTable(d){
+  const card=el('duration-card');
+  if(!d.durationTasks||!d.durationTasks.length){card.style.display='none';return;}
+  card.style.display='block';
+  if(d.avgDurationHours){
+    const h=Math.floor(d.avgDurationHours), m=Math.round((d.avgDurationHours-h)*60);
+    el('avg-duration-badge').textContent=`Promedio: ${h>0?h+'h ':''}${m}min`;
+  }
+  const table=el('duration-table');
+  table.innerHTML=`<thead><tr>
+    <th>Tarea</th>${isAdmin()?'<th>Usuario</th>':''}
+    <th>Prioridad</th><th>▶ Inicio Progreso</th><th>✅ Completada</th><th>⏱ Duración</th>
+  </tr></thead><tbody>`
+    +d.durationTasks.map(t=>`<tr>
+      <td style="font-weight:500">${escH(t.name)}</td>
+      ${isAdmin()?`<td><span class="chip chip-user">👤 ${escH(t.user_name)}</span></td>`:''}
+      <td><span class="badge badge-${t.priority}">${t.priority}</span></td>
+      <td style="font-size:12px;color:#403294;font-weight:500">${fmtTs(t.started_at)}</td>
+      <td style="font-size:12px;color:var(--baja);font-weight:500">${fmtTs(t.completed_at)}</td>
+      <td><span style="font-size:13px;font-weight:700;color:var(--blue)">${fmtDuration(t.started_at,t.completed_at)}</span></td>
+    </tr>`).join('')+'</tbody>';
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 (async()=>{
