@@ -448,7 +448,7 @@ table.u-table tr:hover td{background:var(--blue-light)}
 </div><!-- /app -->
 
 <!-- DAY MODAL -->
-<div class="modal-backdrop" id="day-modal" style="display:none" onclick="if(event.target===this)closeDayModal()">
+<div class="modal-backdrop" id="day-modal" style="display:none" >
   <div class="modal" style="max-width:620px">
     <div class="m-head"><span class="m-title" id="day-modal-title">Tareas del día</span><button class="m-close" onclick="closeDayModal()">×</button></div>
     <div class="m-body"><div id="day-modal-tasks"></div></div>
@@ -457,7 +457,7 @@ table.u-table tr:hover td{background:var(--blue-light)}
 </div>
 
 <!-- TASK MODAL -->
-<div class="modal-backdrop" id="task-modal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
+<div class="modal-backdrop" id="task-modal" style="display:none" >
   <div class="modal">
     <div class="m-head"><span class="m-title" id="task-modal-title">Nueva Tarea</span><button class="m-close" onclick="closeTaskModal()">×</button></div>
     <div class="m-body">
@@ -496,7 +496,7 @@ table.u-table tr:hover td{background:var(--blue-light)}
 </div>
 
 <!-- USER MODAL -->
-<div class="modal-backdrop" id="user-modal" style="display:none" onclick="if(event.target===this)closeUserModal()">
+<div class="modal-backdrop" id="user-modal" style="display:none" >
   <div class="modal">
     <div class="m-head"><span class="m-title" id="user-modal-title">Nuevo Usuario</span><button class="m-close" onclick="closeUserModal()">×</button></div>
     <div class="m-body">
@@ -522,7 +522,7 @@ table.u-table tr:hover td{background:var(--blue-light)}
 </div>
 
 <!-- CHANGE PASSWORD MODAL -->
-<div class="modal-backdrop" id="chpwd-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal-backdrop" id="chpwd-modal" style="display:none" >
   <div class="modal" style="max-width:380px">
     <div class="m-head"><span class="m-title">Cambiar Contraseña</span><button class="m-close" onclick="document.getElementById('chpwd-modal').style.display='none'">×</button></div>
     <div class="m-body">
