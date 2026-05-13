@@ -97,8 +97,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .k-add{padding:4px 8px 8px;flex-shrink:0}
 .k-add-btn{width:100%;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:13px;padding:7px;border-radius:var(--radius);cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:5px}
 .k-add-btn:hover{background:rgba(9,30,66,.08);color:var(--text)}
-.drop-zone{min-height:44px;border-radius:var(--radius);border:2px dashed var(--border2);display:none;align-items:center;justify-content:center;color:var(--text3);font-size:12px;margin-bottom:4px;flex-shrink:0}
-.drop-zone.active{display:flex;background:var(--blue-light);border-color:var(--blue)}
+.k-col.drag-over{outline:2px solid var(--blue);outline-offset:-2px;background-color:rgba(0,82,204,.06)}
+.k-col.drag-over.col-completada{outline-color:var(--baja)}
+.k-col.drag-over.col-cancelada{outline-color:var(--alta)}
+.drop-zone{display:none}
 
 /* ── Task Card ── */
 .t-card{background:var(--white);border-radius:var(--radius);padding:10px 12px;box-shadow:var(--shadow);cursor:grab;transition:box-shadow .2s,transform .15s;border-left:3px solid var(--border);position:relative;user-select:none}
@@ -656,18 +658,19 @@ function renderKanban(tasks){
     const cards=byStatus[col.id]||[];
     const addBtn=canWrite()&&col.id!=='cancelada'
       ?`<div class="k-add"><button class="k-add-btn" onclick="openNewTaskModal(null,'${col.id}')">+ Agregar</button></div>`:'';
-    return `<div class="k-col col-${col.id}" id="col-${col.id}"
-        ondragover="onDragOver(event,'${col.id}')" ondragleave="onDragLeave(event)" ondrop="onDrop(event,'${col.id}')">
+    return `<div class="k-col col-${col.id}" id="col-${col.id}">
       <div class="k-col-head">
         <div class="k-col-title">${col.icon} ${col.label}<span class="k-count">${cards.length}</span></div>
       </div>
       <div class="k-body" id="body-${col.id}">
-        <div class="drop-zone" id="dz-${col.id}">Soltar aquí</div>
         ${cards.map(t=>buildCard(t)).join('')}
       </div>
       ${addBtn}
     </div>`;
   }).join('');
+  // Re-init drag after every render
+  wrap._dragInit = false;
+  initDragDrop();
 }
 
 function buildCard(t){
@@ -677,11 +680,13 @@ function buildCard(t){
   const tomorrow=new Date(Date.now()+86400000).toISOString().split('T')[0];
   const isDueSoon=!isOverdue&&t.end_date===tomorrow;
   const timeStr=t.start_time?`🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}`:'';
-  return `<div class="t-card ${t.priority}" draggable="${canWrite()}"
-      ondragstart="onDragStart(event,${t.id})" ondragend="onDragEnd(event)"
-      onclick="openEditModal(${t.id})" id="tcard-${t.id}">
+  const draggable=canWrite();
+  return `<div class="t-card ${t.priority}" id="tcard-${t.id}"
+      data-task-id="${t.id}"
+      style="cursor:${draggable?'grab':'default'}"
+      onclick="handleCardClick(event,${t.id})">
     <button class="t-card-edit" onclick="event.stopPropagation();openEditModal(${t.id})">✎</button>
-    <div class="t-card-label"><div class="t-label ${t.priority}" title="${t.priority}"></div></div>
+    <div class="t-card-label"><div class="t-label ${t.priority}"></div></div>
     <div class="t-card-name">${escH(t.name)}</div>
     ${t.description?`<div class="t-card-desc">${escH(t.description)}</div>`:''}
     <div class="t-card-foot">
@@ -693,23 +698,101 @@ function buildCard(t){
   </div>`;
 }
 
-// ── Drag & Drop ───────────────────────────────────────────────────────────────
-function onDragStart(e,id){
-  dragTaskId=id; e.dataTransfer.effectAllowed='move';
-  setTimeout(()=>el('tcard-'+id)?.classList.add('dragging'),0);
-  document.querySelectorAll('.drop-zone').forEach(dz=>dz.style.display='flex');
+// ── Drag & Drop (mouse events) ────────────────────────────────────────────────
+let dragState = null; // {taskId, ghost, originCol, startX, startY, moved}
+
+function handleCardClick(e, taskId) {
+  // only open modal if it wasn't a drag
+  if (dragState && dragState.moved) return;
+  openEditModal(taskId);
 }
-function onDragEnd(){
-  el('tcard-'+dragTaskId)?.classList.remove('dragging');
-  document.querySelectorAll('.drop-zone').forEach(dz=>{dz.style.display='none';dz.classList.remove('active');});
-  dragTaskId=null;
+
+function initDragDrop() {
+  // Attach mousedown on kanban wrap via delegation
+  const wrap = el('kanban-wrap');
+  if (!wrap || wrap._dragInit) return;
+  wrap._dragInit = true;
+
+  wrap.addEventListener('mousedown', e => {
+    if (!canWrite()) return;
+    const card = e.target.closest('.t-card');
+    if (!card) return;
+    // Don't start drag on buttons
+    if (e.target.closest('button')) return;
+
+    e.preventDefault();
+    const taskId = parseInt(card.dataset.taskId);
+    const rect = card.getBoundingClientRect();
+
+    // Create ghost
+    const ghost = card.cloneNode(true);
+    ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;
+      pointer-events:none;transform:rotate(2deg) scale(1.03);
+      box-shadow:0 8px 24px rgba(9,30,66,.3);border-radius:8px;
+      left:${rect.left}px;top:${rect.top}px;transition:none;cursor:grabbing`;
+    document.body.appendChild(ghost);
+
+    card.style.opacity = '0.35';
+    card.style.cursor = 'grabbing';
+
+    dragState = {
+      taskId,
+      ghost,
+      card,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      moved: false,
+      originStatus: allTasks.find(t=>t.id===taskId)?.status
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
 }
-function onDragOver(e,colId){e.preventDefault();e.dataTransfer.dropEffect='move';el('dz-'+colId)?.classList.add('active');}
-function onDragLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.querySelectorAll('.drop-zone').forEach(dz=>dz.classList.remove('active'));}
-async function onDrop(e,newStatus){
-  e.preventDefault(); if(!dragTaskId||!canWrite())return;
-  const t=allTasks.find(t=>t.id===dragTaskId);
-  if(t&&t.status!==newStatus){await apiFetch('/tasks/'+dragTaskId,{method:'PUT',body:JSON.stringify({status:newStatus})});loadBoard();}
+
+function onMouseMove(e) {
+  if (!dragState) return;
+  dragState.moved = true;
+  const {ghost, offsetX, offsetY} = dragState;
+  ghost.style.left = (e.clientX - offsetX) + 'px';
+  ghost.style.top  = (e.clientY - offsetY) + 'px';
+
+  // Highlight hovered column
+  document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  const col = target?.closest('.k-col');
+  if (col) col.classList.add('drag-over');
+}
+
+async function onMouseUp(e) {
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', onMouseUp);
+
+  if (!dragState) return;
+  const {taskId, ghost, card, moved} = dragState;
+
+  // Cleanup visual
+  ghost.remove();
+  card.style.opacity = '';
+  card.style.cursor = '';
+  document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
+
+  if (moved) {
+    // Find which column the mouse is over
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const col = target?.closest('.k-col');
+    const newStatus = col?.id?.replace('col-', '');
+
+    if (newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
+      const task = allTasks.find(t => t.id === taskId);
+      if (task && task.status !== newStatus) {
+        await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
+        loadBoard();
+      }
+    }
+  }
+
+  dragState = null;
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
