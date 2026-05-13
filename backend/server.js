@@ -66,7 +66,9 @@ if (!auditCols.includes('user_id')) db.exec("ALTER TABLE audit_log ADD COLUMN us
 if (!auditCols.includes('ip'))      db.exec("ALTER TABLE audit_log ADD COLUMN ip TEXT");
 
 const taskCols = db.prepare("PRAGMA table_info(tasks)").all().map(c => c.name);
-if (!taskCols.includes('user_id'))  db.exec("ALTER TABLE tasks ADD COLUMN user_id INTEGER");
+if (!taskCols.includes('user_id'))     db.exec("ALTER TABLE tasks ADD COLUMN user_id INTEGER");
+if (!taskCols.includes('started_at'))  db.exec("ALTER TABLE tasks ADD COLUMN started_at TEXT");
+if (!taskCols.includes('completed_at'))db.exec("ALTER TABLE tasks ADD COLUMN completed_at TEXT");
 
 // ─── Default admin ────────────────────────────────────────────────────────────
 const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
@@ -230,9 +232,30 @@ app.put('/api/tasks/:id', requireNotViewer, (req, res) => {
   if (!old) return res.status(404).json({ error: 'Tarea no encontrada' });
   if (req.user.role === 'user' && old.user_id !== req.user.id) return res.status(403).json({ error: 'Sin acceso' });
   const { name, description, start_date, end_date, start_time, end_time, priority, status } = req.body;
-  db.prepare(`UPDATE tasks SET name=?, description=?, start_date=?, end_date=?, start_time=?, end_time=?, priority=?, status=?, updated_at=datetime('now') WHERE id=?`)
+  const newStatus = status ?? old.status;
+
+  // Auto-stamp timestamps on status transitions
+  let started_at  = old.started_at;
+  let completed_at = old.completed_at;
+  if (newStatus === 'en_progreso' && old.status !== 'en_progreso' && !started_at) {
+    started_at = new Date().toISOString().replace('T',' ').slice(0,19);
+  }
+  if (newStatus === 'completada' && old.status !== 'completada') {
+    completed_at = new Date().toISOString().replace('T',' ').slice(0,19);
+    // If somehow started_at was never set, set it now
+    if (!started_at) started_at = completed_at;
+  }
+  // Reset timestamps if sent back to pendiente
+  if (newStatus === 'pendiente') {
+    started_at   = null;
+    completed_at = null;
+  }
+
+  db.prepare(`UPDATE tasks SET name=?, description=?, start_date=?, end_date=?, start_time=?, end_time=?,
+    priority=?, status=?, started_at=?, completed_at=?, updated_at=datetime('now') WHERE id=?`)
     .run(name??old.name, description??old.description, start_date??old.start_date, end_date??old.end_date,
-      start_time??old.start_time, end_time??old.end_time, priority??old.priority, status??old.status, req.params.id);
+      start_time??old.start_time, end_time??old.end_time, priority??old.priority, newStatus,
+      started_at, completed_at, req.params.id);
   const updated = db.prepare('SELECT t.*, u.full_name as user_name FROM tasks t JOIN users u ON t.user_id=u.id WHERE t.id=?').get(req.params.id);
   auditLog(req.user.id, req.params.id, 'UPDATE', old, updated, req.ip);
   res.json(updated);
@@ -307,7 +330,20 @@ app.get('/api/stats', requireAuth, (req, res) => {
     COUNT(*) as total, SUM(CASE WHEN status='completada' THEN 1 ELSE 0 END) as completada
     FROM tasks t ${where} GROUP BY period ORDER BY period`).all();
 
-  res.json({ byStatus, byPriority, byUser, byWeek, byMonth, byYear });
+  // Duration stats: tasks with both started_at and completed_at
+  const durationWhere = where ? where + " AND t.started_at IS NOT NULL AND t.completed_at IS NOT NULL"
+                               : "WHERE t.started_at IS NOT NULL AND t.completed_at IS NOT NULL";
+  const durationTasks = db.prepare(`
+    SELECT t.name, u.full_name as user_name, t.priority, t.started_at, t.completed_at,
+      ROUND((julianday(t.completed_at) - julianday(t.started_at)) * 24, 2) as duration_hours
+    FROM tasks t JOIN users u ON t.user_id=u.id ${durationWhere}
+    ORDER BY t.completed_at DESC LIMIT 50`).all();
+
+  const avgDuration = db.prepare(`
+    SELECT ROUND(AVG((julianday(completed_at) - julianday(started_at)) * 24), 2) as avg_hours
+    FROM tasks t ${durationWhere}`).get();
+
+  res.json({ byStatus, byPriority, byUser, byWeek, byMonth, byYear, durationTasks, avgDurationHours: avgDuration?.avg_hours || 0 });
 });
 
 // ─── Export ───────────────────────────────────────────────────────────────────
@@ -326,9 +362,13 @@ app.get('/api/export/excel', (req, res, next) => {
     'ID': t.id, 'Usuario': t.user_name, 'Nombre': t.name, 'Descripción': t.description,
     'Fecha Inicio': t.start_date, 'Fecha Término': t.end_date,
     'Hora Inicio': t.start_time||'', 'Hora Término': t.end_time||'',
-    'Prioridad': t.priority, 'Estado': t.status, 'Creada': t.created_at
+    'Prioridad': t.priority, 'Estado': t.status,
+    'Inicio Progreso': t.started_at||'', 'Completada En': t.completed_at||'',
+    'Duración (horas)': (t.started_at && t.completed_at)
+      ? Math.round((new Date(t.completed_at)-new Date(t.started_at))/36000)/100 : '',
+    'Creada': t.created_at
   })));
-  ws['!cols'] = [{wch:5},{wch:22},{wch:30},{wch:38},{wch:13},{wch:13},{wch:11},{wch:11},{wch:9},{wch:13},{wch:19}];
+  ws['!cols'] = [{wch:5},{wch:22},{wch:28},{wch:36},{wch:13},{wch:13},{wch:11},{wch:11},{wch:9},{wch:13},{wch:19},{wch:19},{wch:16},{wch:19}];
   XLSX.utils.book_append_sheet(wb, ws, 'Tareas');
   if (req.user.role === 'admin') {
     const us = db.prepare('SELECT id, rut, full_name, phone, email, role, active, created_at FROM users ORDER BY full_name').all();
