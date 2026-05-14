@@ -238,12 +238,12 @@ app.put('/api/tasks/:id', requireNotViewer, (req, res) => {
   let started_at  = old.started_at;
   let completed_at = old.completed_at;
   if (newStatus === 'en_progreso' && old.status !== 'en_progreso' && !started_at) {
-    started_at = new Date().toISOString().replace('T',' ').slice(0,19);
+    started_at = nowInTz();
   }
   if (newStatus === 'completada' && old.status !== 'completada') {
-    completed_at = new Date().toISOString().replace('T',' ').slice(0,19);
+    completed_at = nowInTz();
     // If somehow started_at was never set, set it now
-    if (!started_at) started_at = completed_at;
+    if (!started_at) started_at = nowInTz();
   }
   // Reset timestamps if sent back to pendiente
   if (newStatus === 'pendiente') {
@@ -386,6 +386,58 @@ app.get('/api/export/excel', (req, res, next) => {
   res.setHeader('Content-Disposition', `attachment; filename="syc_tareas_${new Date().toISOString().split('T')[0]}.xlsx"`);
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.send(buf);
+});
+
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+// Config table for system settings (timezone, etc.)
+db.exec(`CREATE TABLE IF NOT EXISTS config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now')),
+  updated_by INTEGER
+);`);
+
+// Seed default timezone from env or America/Santiago
+const tzRow = db.prepare("SELECT value FROM config WHERE key='timezone'").get();
+if (!tzRow) {
+  const defaultTz = process.env.TZ || 'America/Santiago';
+  db.prepare("INSERT OR IGNORE INTO config (key,value) VALUES ('timezone',?)").run(defaultTz);
+}
+
+function getTimezone() {
+  const row = db.prepare("SELECT value FROM config WHERE key='timezone'").get();
+  return row ? row.value : 'America/Santiago';
+}
+
+function nowInTz() {
+  return new Date().toLocaleString('sv-SE', { timeZone: getTimezone() }).replace('T',' ').slice(0,19);
+}
+
+app.get('/api/config', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT key, value, updated_at FROM config').all();
+  const cfg = {};
+  rows.forEach(r => cfg[r.key] = { value: r.value, updated_at: r.updated_at });
+  // Also return available timezones list and current server time in configured tz
+  res.json({
+    config: cfg,
+    currentTime: nowInTz(),
+    timezone: getTimezone(),
+  });
+});
+
+app.put('/api/config', requireAuth, (req, res) => {
+  if (!isSuperAdmin(req)) return res.status(403).json({ error: 'Solo el superadmin puede cambiar la configuración' });
+  const { timezone } = req.body;
+  if (!timezone) return res.status(400).json({ error: 'timezone requerido' });
+  // Validate it's a real timezone
+  try { new Date().toLocaleString('sv-SE', { timeZone: timezone }); }
+  catch(e) { return res.status(400).json({ error: 'Zona horaria inválida: ' + timezone }); }
+  db.prepare("INSERT OR REPLACE INTO config (key,value,updated_at,updated_by) VALUES ('timezone',?,datetime('now'),?)")
+    .run(timezone, req.user.id);
+  process.env.TZ = timezone;
+  auditLog(req.user.id, null, 'UPDATE_CONFIG', null, { timezone }, req.ip);
+  res.json({ success: true, timezone, currentTime: nowInTz() });
 });
 
 // ─── Cron ─────────────────────────────────────────────────────────────────────
