@@ -766,10 +766,14 @@ function initDragDrop() {
     const rect = card.getBoundingClientRect();
 
     const ghost = card.cloneNode(true);
+    ghost.removeAttribute('id');
+    ghost.removeAttribute('data-task-id');
     ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;
-      pointer-events:none;transform:rotate(2deg) scale(1.03);
+      pointer-events:none !important;transform:rotate(2deg) scale(1.03);
       box-shadow:0 8px 24px rgba(9,30,66,.3);border-radius:8px;
       left:${rect.left}px;top:${rect.top}px;transition:none;cursor:grabbing`;
+    // Disable all children pointer events too
+    ghost.querySelectorAll('*').forEach(el => el.style.pointerEvents = 'none');
     document.body.appendChild(ghost);
 
     card.style.opacity = '0.35';
@@ -809,40 +813,41 @@ function onMouseMove(e) {
 async function onMouseUp(e) {
   if (!dragState) return;
 
-  // ── 1. Remove ghost IMMEDIATELY (sync) before anything else ──────────────
-  const ghost = dragState.ghost;
-  ghost.style.display = 'none';
-  ghost.remove();
+  const {taskId, moved, card} = dragState;
 
-  // ── 2. Restore card appearance immediately ────────────────────────────────
-  dragState.card.style.opacity = '';
-  dragState.card.style.cursor  = '';
+  // ── 1. Detach listeners first ─────────────────────────────────────────────
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup',   onMouseUp);
 
-  // ── 3. Detect target column (ghost is gone so elementFromPoint is clean) ──
-  const target    = document.elementFromPoint(e.clientX, e.clientY);
-  const col       = target?.closest('.k-col');
-  const newStatus = col?.id?.replace('col-', '');
+  // ── 2. Physically remove ghost from DOM completely ────────────────────────
+  dragState.ghost.parentNode?.removeChild(dragState.ghost);
+
+  // ── 3. Restore card immediately ───────────────────────────────────────────
+  card.style.opacity = '';
+  card.style.cursor  = '';
 
   // ── 4. Clear column highlights ────────────────────────────────────────────
   document.querySelectorAll('.k-col').forEach(c => c.classList.remove('drag-over'));
 
-  // ── 5. Detach listeners ───────────────────────────────────────────────────
-  document.removeEventListener('mousemove', onMouseMove);
-  document.removeEventListener('mouseup',   onMouseUp);
+  // ── 5. NOW detect column — ghost is 100% gone from DOM ───────────────────
+  const target    = document.elementFromPoint(e.clientX, e.clientY);
+  const col       = target?.closest('.k-col');
+  const newStatus = col?.id?.replace('col-', '');
 
-  const {taskId, moved} = dragState;
-  _wasDrag = moved;
-  dragState = null; // clear state
+  // ── 6. Clear drag state ───────────────────────────────────────────────────
+  _wasDrag  = moved;
+  dragState = null;
 
-  // ── 6. Act on drop result ─────────────────────────────────────────────────
+  // ── 7. Act ────────────────────────────────────────────────────────────────
   if (moved) {
-    if (newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
+    const validStatuses = ['pendiente','en_progreso','completada','cancelada'];
+    if (newStatus && validStatuses.includes(newStatus)) {
       const task = allTasks.find(t => t.id === taskId);
       if (task && task.status !== newStatus) {
         await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
       }
     }
-    loadBoard(); // always reload when dragged (restores card even if same column)
+    loadBoard();
   }
 }
 
