@@ -739,14 +739,12 @@ function cleanupDrag(wasDrag) {
   if (!dragState) return;
   _wasDrag = !!wasDrag;
   try { dragState.ghost.remove(); } catch(e) {}
-  try {
-    dragState.card.style.opacity = '';
-    dragState.card.style.cursor = '';
-  } catch(e) {}
-  document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
+  try { dragState.card.style.opacity = ''; dragState.card.style.cursor = ''; } catch(e) {}
+  document.querySelectorAll('.k-col').forEach(c => c.classList.remove('drag-over'));
   document.removeEventListener('mousemove', onMouseMove);
-  document.removeEventListener('mouseup', onMouseUp);
+  document.removeEventListener('mouseup',   onMouseUp);
   dragState = null;
+  loadBoard(); // restore board after escape
 }
 
 document.addEventListener('mouseleave', () => { if (dragState) cleanupDrag(false); });
@@ -811,27 +809,41 @@ function onMouseMove(e) {
 async function onMouseUp(e) {
   if (!dragState) return;
 
-  dragState.ghost.style.display = 'none';
-  const target = document.elementFromPoint(e.clientX, e.clientY);
-  dragState.ghost.style.display = '';
-  const col = target?.closest('.k-col');
+  // ── 1. Remove ghost IMMEDIATELY (sync) before anything else ──────────────
+  const ghost = dragState.ghost;
+  ghost.style.display = 'none';
+  ghost.remove();
+
+  // ── 2. Restore card appearance immediately ────────────────────────────────
+  dragState.card.style.opacity = '';
+  dragState.card.style.cursor  = '';
+
+  // ── 3. Detect target column (ghost is gone so elementFromPoint is clean) ──
+  const target    = document.elementFromPoint(e.clientX, e.clientY);
+  const col       = target?.closest('.k-col');
   const newStatus = col?.id?.replace('col-', '');
+
+  // ── 4. Clear column highlights ────────────────────────────────────────────
+  document.querySelectorAll('.k-col').forEach(c => c.classList.remove('drag-over'));
+
+  // ── 5. Detach listeners ───────────────────────────────────────────────────
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup',   onMouseUp);
+
   const {taskId, moved} = dragState;
+  _wasDrag = moved;
+  dragState = null; // clear state
 
-  cleanupDrag(moved); // pass moved so _wasDrag is set correctly
-
-  if (moved && newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
-    const task = allTasks.find(t => t.id === taskId);
-    if (task && task.status !== newStatus) {
-      await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
+  // ── 6. Act on drop result ─────────────────────────────────────────────────
+  if (moved) {
+    if (newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
+      const task = allTasks.find(t => t.id === taskId);
+      if (task && task.status !== newStatus) {
+        await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
+      }
     }
-    // Always reload board — restores card opacity even if dropped on same column
-    loadBoard();
-  } else if (moved) {
-    // Dropped outside any column — reload to restore card appearance
-    loadBoard();
+    loadBoard(); // always reload when dragged (restores card even if same column)
   }
-  // If not moved = plain click, handleCardClick will fire next
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
