@@ -9,6 +9,7 @@ services:
       - DB_PATH=/app/data/tasks.db
       - SUPERADMIN_EMAIL=aulavirtual@sycchile.com
       - JWT_SECRET=syc-chile-prod-secret-2025
+      - TZ=America/Santiago
     volumes:
       - taskflow-data:/app/data
     networks:
