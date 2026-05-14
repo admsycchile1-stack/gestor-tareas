@@ -725,28 +725,32 @@ function buildCard(t){
 // ── Drag & Drop (mouse events) ────────────────────────────────────────────────
 let dragState = null; // {taskId, ghost, originCol, startX, startY, moved}
 
+// _wasDrag and handleCardClick defined above in drag section
+
+// Track if last mousedown resulted in a drag, to block the subsequent click
+let _wasDrag = false;
+
 function handleCardClick(e, taskId) {
-  // only open modal if it wasn't a drag
-  if (dragState && dragState.moved) return;
+  if (_wasDrag) { _wasDrag = false; return; }
   openEditModal(taskId);
 }
 
-function cleanupDrag() {
+function cleanupDrag(wasDrag) {
   if (!dragState) return;
-  dragState.ghost.remove();
-  if (dragState.card) {
+  _wasDrag = !!wasDrag;
+  try { dragState.ghost.remove(); } catch(e) {}
+  try {
     dragState.card.style.opacity = '';
     dragState.card.style.cursor = '';
-  }
+  } catch(e) {}
   document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
   document.removeEventListener('mousemove', onMouseMove);
   document.removeEventListener('mouseup', onMouseUp);
   dragState = null;
 }
 
-// Cancel drag if mouse leaves the window or tab becomes hidden
-document.addEventListener('mouseleave', () => { if (dragState) cleanupDrag(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && dragState) cleanupDrag(); });
+document.addEventListener('mouseleave', () => { if (dragState) cleanupDrag(false); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && dragState) cleanupDrag(false); });
 
 function initDragDrop() {
   const wrap = el('kanban-wrap');
@@ -758,8 +762,8 @@ function initDragDrop() {
     const card = e.target.closest('.t-card');
     if (!card) return;
     if (e.target.closest('button')) return;
-
     e.preventDefault();
+
     const taskId = parseInt(card.dataset.taskId);
     const rect = card.getBoundingClientRect();
 
@@ -775,6 +779,7 @@ function initDragDrop() {
 
     dragState = {
       taskId, ghost, card,
+      startX: e.clientX, startY: e.clientY,
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
       moved: false,
@@ -787,46 +792,46 @@ function initDragDrop() {
 
 function onMouseMove(e) {
   if (!dragState) return;
-  // Need at least 4px of movement to count as a drag (avoids accidental drags on click)
-  if (!dragState.moved) {
-    const dx = Math.abs(e.clientX - (dragState.ghost.getBoundingClientRect().left + dragState.offsetX));
-    const dy = Math.abs(e.clientY - (dragState.ghost.getBoundingClientRect().top  + dragState.offsetY));
-    if (dx < 4 && dy < 4) return;
-    dragState.moved = true;
-  }
+  const dx = Math.abs(e.clientX - dragState.startX);
+  const dy = Math.abs(e.clientY - dragState.startY);
+  if (!dragState.moved && dx < 5 && dy < 5) return;
+  dragState.moved = true;
+
   const {ghost, offsetX, offsetY} = dragState;
   ghost.style.left = (e.clientX - offsetX) + 'px';
   ghost.style.top  = (e.clientY - offsetY) + 'px';
 
   document.querySelectorAll('.k-col').forEach(col => col.classList.remove('drag-over'));
-  // Use ghost's center to detect column, not cursor (avoids edge issues)
-  const cx = e.clientX, cy = e.clientY;
   ghost.style.display = 'none';
-  const target = document.elementFromPoint(cx, cy);
+  const target = document.elementFromPoint(e.clientX, e.clientY);
   ghost.style.display = '';
-  const col = target?.closest('.k-col');
-  if (col) col.classList.add('drag-over');
+  target?.closest('.k-col')?.classList.add('drag-over');
 }
 
 async function onMouseUp(e) {
   if (!dragState) return;
-  const {taskId, moved} = dragState;
-  const col = (() => {
-    dragState.ghost.style.display = 'none';
-    const t = document.elementFromPoint(e.clientX, e.clientY);
-    dragState.ghost.style.display = '';
-    return t?.closest('.k-col');
-  })();
+
+  dragState.ghost.style.display = 'none';
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  dragState.ghost.style.display = '';
+  const col = target?.closest('.k-col');
   const newStatus = col?.id?.replace('col-', '');
-  cleanupDrag();
+  const {taskId, moved} = dragState;
+
+  cleanupDrag(moved); // pass moved so _wasDrag is set correctly
 
   if (moved && newStatus && ['pendiente','en_progreso','completada','cancelada'].includes(newStatus)) {
     const task = allTasks.find(t => t.id === taskId);
     if (task && task.status !== newStatus) {
       await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:newStatus})});
-      loadBoard();
     }
+    // Always reload board — restores card opacity even if dropped on same column
+    loadBoard();
+  } else if (moved) {
+    // Dropped outside any column — reload to restore card appearance
+    loadBoard();
   }
+  // If not moved = plain click, handleCardClick will fire next
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
