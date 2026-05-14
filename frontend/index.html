@@ -723,6 +723,9 @@ function buildCard(t){
 }
 
 // ── Drag & Drop ───────────────────────────────────────────────────────────────
+// Simple approach: no ghost element, just highlight target column.
+// Uses mousedown → mousemove → mouseup with getBoundingClientRect for hit-testing.
+
 let _wasDrag  = false;
 let dragState = null;
 
@@ -742,37 +745,13 @@ function initDragDrop() {
     if (!card || e.target.closest('button')) return;
     e.preventDefault();
 
-    const taskId = parseInt(card.dataset.taskId);
-    const rect   = card.getBoundingClientRect();
-
-    // Build ghost from scratch (not cloneNode) so no stale IDs/attrs
-    const ghost = document.createElement('div');
-    ghost.innerHTML = card.innerHTML;
-    ghost.className = card.className;
-    ghost.style.position      = 'fixed';
-    ghost.style.zIndex        = '9999';
-    ghost.style.width         = rect.width + 'px';
-    ghost.style.opacity       = '0.85';
-    ghost.style.pointerEvents = 'none';
-    ghost.style.transform     = 'rotate(2deg) scale(1.03)';
-    ghost.style.boxShadow     = '0 8px 24px rgba(9,30,66,.3)';
-    ghost.style.borderRadius  = '8px';
-    ghost.style.left          = rect.left + 'px';
-    ghost.style.top           = rect.top  + 'px';
-    ghost.style.cursor        = 'grabbing';
-    ghost.style.userSelect    = 'none';
-    document.body.appendChild(ghost);
-
-    card.style.opacity = '0.3';
-
     dragState = {
-      taskId, ghost, card,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-      startX:  e.clientX,
-      startY:  e.clientY,
-      moved:   false,
-      targetStatus: null,   // updated live during mousemove via getBoundingClientRect
+      taskId:       parseInt(card.dataset.taskId),
+      card,
+      startX:       e.clientX,
+      startY:       e.clientY,
+      moved:        false,
+      targetStatus: null,
     };
 
     document.addEventListener('mousemove', onDragMove);
@@ -783,17 +762,18 @@ function initDragDrop() {
 function onDragMove(e) {
   if (!dragState) return;
 
+  const dx = Math.abs(e.clientX - dragState.startX);
+  const dy = Math.abs(e.clientY - dragState.startY);
+  if (!dragState.moved && dx < 8 && dy < 8) return;
+
   if (!dragState.moved) {
-    if (Math.abs(e.clientX - dragState.startX) < 6 &&
-        Math.abs(e.clientY - dragState.startY) < 6) return;
     dragState.moved = true;
+    dragState.card.style.opacity = '0.4';
+    dragState.card.style.outline = '2px solid var(--blue)';
+    document.body.style.cursor   = 'grabbing';
   }
 
-  // Move ghost
-  dragState.ghost.style.left = (e.clientX - dragState.offsetX) + 'px';
-  dragState.ghost.style.top  = (e.clientY - dragState.offsetY) + 'px';
-
-  // Detect column using getBoundingClientRect — no elementFromPoint needed
+  // Hit-test columns with getBoundingClientRect
   dragState.targetStatus = null;
   document.querySelectorAll('.k-col').forEach(col => {
     col.classList.remove('drag-over');
@@ -812,45 +792,42 @@ async function onDragUp() {
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup',   onDragUp);
 
-  // Remove ghost
-  try { dragState.ghost.parentNode.removeChild(dragState.ghost); } catch(_) {}
-
-  // Restore card
+  // Always restore card and cursor immediately
   dragState.card.style.opacity = '';
-  dragState.card.style.cursor  = '';
-
-  // Clear highlights
+  dragState.card.style.outline = '';
+  document.body.style.cursor   = '';
   document.querySelectorAll('.k-col').forEach(c => c.classList.remove('drag-over'));
 
-  const {taskId, moved, targetStatus} = dragState;
+  const { taskId, moved, targetStatus } = dragState;
+  dragState = null; // clear BEFORE any await
   _wasDrag  = moved;
-  dragState = null;
 
-  if (moved) {
-    const valid = ['pendiente','en_progreso','completada','cancelada'];
-    if (targetStatus && valid.includes(targetStatus)) {
-      const task = allTasks.find(t => t.id === taskId);
-      if (task && task.status !== targetStatus) {
-        await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:targetStatus})});
-      }
+  if (moved && targetStatus && ['pendiente','en_progreso','completada','cancelada'].includes(targetStatus)) {
+    const task = allTasks.find(t => t.id === taskId);
+    if (task && task.status !== targetStatus) {
+      await apiFetch('/tasks/'+taskId, {method:'PUT', body:JSON.stringify({status:targetStatus})});
     }
+    loadBoard();
+  } else if (moved) {
+    // Dropped outside — just reload to restore
     loadBoard();
   }
 }
 
-function cleanupDrag() {
+// Safety: cancel drag if mouse leaves window or tab hidden
+function cancelDrag() {
   if (!dragState) return;
-  try { dragState.ghost.parentNode.removeChild(dragState.ghost); } catch(_) {}
-  try { dragState.card.style.opacity = ''; } catch(_) {}
-  document.querySelectorAll('.k-col').forEach(c => c.classList.remove('drag-over'));
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup',   onDragUp);
+  dragState.card.style.opacity = '';
+  dragState.card.style.outline = '';
+  document.body.style.cursor   = '';
+  document.querySelectorAll('.k-col').forEach(c => c.classList.remove('drag-over'));
   dragState = null;
   loadBoard();
 }
-
-document.addEventListener('mouseleave',       () => { if (dragState) cleanupDrag(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && dragState) cleanupDrag(); });
+document.addEventListener('mouseleave',       () => { if (dragState?.moved) cancelDrag(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden)  cancelDrag(); });
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
 async function renderAnnualCalendar(){
