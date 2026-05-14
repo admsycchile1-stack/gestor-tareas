@@ -469,10 +469,6 @@ table.u-table tr:hover td{background:var(--blue-light)}
         <div class="fg"><label class="fl">Fecha término *</label><input class="fi" type="date" id="task-end-date"></div>
       </div>
       <div class="frow">
-        <div class="fg"><label class="fl">Hora inicio</label><input class="fi" type="time" id="task-start-time"></div>
-        <div class="fg"><label class="fl">Hora término</label><input class="fi" type="time" id="task-end-time"></div>
-      </div>
-      <div class="frow">
         <div class="fg"><label class="fl">Prioridad</label><select class="fs" id="task-priority"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Media</option><option value="baja">🟢 Baja</option></select></div>
         <div class="fg" id="status-group" style="display:none"><label class="fl">Estado</label><select class="fs" id="task-status"><option value="pendiente">Pendiente</option><option value="en_progreso">En Progreso</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option></select></div>
       </div>
@@ -701,7 +697,6 @@ function buildCard(t){
   const isOverdue=t.end_date<todayStr&&!['completada','cancelada'].includes(t.status);
   const tomorrow=new Date(Date.now()+86400000).toISOString().split('T')[0];
   const isDueSoon=!isOverdue&&t.end_date===tomorrow;
-  const timeStr=t.start_time?`🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}`:'';
   const durationStr = t.started_at && t.completed_at ? fmtDuration(t.started_at, t.completed_at) : '';
   const draggable=canWrite();
   return `<div class="t-card ${t.priority}" id="tcard-${t.id}"
@@ -714,7 +709,6 @@ function buildCard(t){
     ${t.description?`<div class="t-card-desc">${escH(t.description)}</div>`:''}
     <div class="t-card-foot">
       <span class="chip chip-date ${isOverdue?'overdue':isDueSoon?'due-soon':''}">📅 ${dateLabel}</span>
-      ${timeStr?`<span class="chip chip-date">${timeStr}</span>`:''}
       ${t.started_at?`<span class="chip" style="background:#ede0ff;color:#403294" title="Inicio: ${t.started_at}">▶ ${fmtTs(t.started_at)}</span>`:''}
       ${durationStr?`<span class="chip" style="background:#e3fcef;color:#006644">⏱ ${durationStr}</span>`:''}
       ${isAdmin()&&t.user_name?`<span class="chip chip-user">👤 ${escH(t.user_name)}</span>`:''}
@@ -929,7 +923,6 @@ function openNewTaskModalForDay(){closeDayModal();openNewTaskModal(selectedDay);
 function renderSimpleTaskList(cont,tasks){
   cont.innerHTML=tasks.map(t=>{
     const isM=t.start_date!==t.end_date;
-    const time=t.start_time?`🕐 ${t.start_time}${t.end_time?' → '+t.end_time:''}`:'';
     const border=t.priority==='alta'?'var(--alta)':t.priority==='media'?'var(--media)':'var(--baja)';
     return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;margin-bottom:7px;cursor:pointer;border-left:3px solid ${border}" onclick="openEditModal(${t.id})">
       <div style="font-size:14px;font-weight:600;margin-bottom:3px">${escH(t.name)}</div>
@@ -937,7 +930,7 @@ function renderSimpleTaskList(cont,tasks){
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <span class="badge badge-${t.priority}">${t.priority}</span>
         <span class="badge badge-${t.status}">${statusLabel(t.status)}</span>
-        ${time?`<span class="chip chip-date">${time}</span>`:''}
+
         ${isM?`<span class="chip" style="background:#e6f4ff;color:#0052cc">${t.start_date} → ${t.end_date}</span>`:`<span class="chip chip-date">${t.start_date}</span>`}
         ${isAdmin()&&t.user_name?`<span class="chip chip-user">👤 ${escH(t.user_name)}</span>`:''}
       </div>
@@ -1156,7 +1149,7 @@ async function openNewTaskModal(dateStr,initialStatus){
   el('task-modal-title').textContent='Nueva Tarea';
   el('task-id').value=''; el('task-name').value=''; el('task-desc').value='';
   el('task-start-date').value=dateStr||todayStr; el('task-end-date').value=dateStr||todayStr;
-  el('task-start-time').value=''; el('task-end-time').value='';
+  
   el('task-priority').value='media'; el('task-status').value=initialStatus||'pendiente';
   el('status-group').style.display='none'; el('delete-task-btn').style.display='none';
   el('save-task-btn').style.display='inline-flex';
@@ -1173,7 +1166,7 @@ async function openEditModal(id){
   el('task-modal-title').textContent='Editar Tarea';
   el('task-id').value=t.id; el('task-name').value=t.name; el('task-desc').value=t.description||'';
   el('task-start-date').value=t.start_date; el('task-end-date').value=t.end_date;
-  el('task-start-time').value=t.start_time||''; el('task-end-time').value=t.end_time||'';
+  
   el('task-priority').value=t.priority; el('task-status').value=t.status;
   el('status-group').style.display=canWrite()?'block':'none';
   el('delete-task-btn').style.display=isAdmin()?'inline-flex':'none';
@@ -1209,7 +1202,7 @@ async function saveTask(){
   const name=v('task-name').trim(),sd=v('task-start-date'),ed=v('task-end-date');
   if(!name||!sd||!ed){alert('Nombre y fechas requeridos');return;}
   if(ed<sd){alert('Fecha término no puede ser anterior al inicio');return;}
-  const payload={name,description:v('task-desc'),start_date:sd,end_date:ed,start_time:v('task-start-time')||null,end_time:v('task-end-time')||null,priority:v('task-priority'),status:v('task-status')||'pendiente',user_id:isAdmin()?parseInt(v('task-user-id'))||undefined:undefined};
+  const payload={name,description:v('task-desc'),start_date:sd,end_date:ed,start_time:null,end_time:null,priority:v('task-priority'),status:v('task-status')||'pendiente',user_id:isAdmin()?parseInt(v('task-user-id'))||undefined:undefined};
   await apiFetch(editingTaskId?'/tasks/'+editingTaskId:'/tasks',{method:editingTaskId?'PUT':'POST',body:JSON.stringify(payload)});
   closeTaskModal(); loadBoard();
   if(el('page-tasks').classList.contains('active'))loadAllTasks();
