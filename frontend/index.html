@@ -292,6 +292,7 @@ table.u-table tr:hover td{background:var(--blue-light)}
       <button class="tb-btn"        onclick="showPage('charts')"   id="nav-charts">📊 Gráficos</button>
       <button class="tb-btn hidden" onclick="showPage('users')"    id="nav-users">👥 Usuarios</button>
       <button class="tb-btn hidden" onclick="showPage('audit')"    id="nav-audit">📜 Auditoría</button>
+      <button class="tb-btn hidden" onclick="showPage('config')"   id="nav-config">⚙️ Configuración</button>
     </div>
     <div class="topbar-right">
       <div id="alert-container"></div>
@@ -442,6 +443,74 @@ table.u-table tr:hover td{background:var(--blue-light)}
         </div>
         <div id="audit-list"></div>
       </div>
+    </div>
+  </div>
+
+
+  <!-- CONFIG -->
+  <div class="page" id="page-config">
+    <div class="ph">
+      <div><div class="ph-title">⚙️ Configuración del Sistema</div><div class="ph-sub">Solo visible para el Super Administrador</div></div>
+    </div>
+    <div class="scroll-area">
+
+      <!-- Current time card -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow);max-width:600px">
+        <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🕐 Hora actual del sistema</div>
+        <div style="font-size:28px;font-weight:700;color:var(--blue);font-family:monospace" id="cfg-current-time">—</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px" id="cfg-current-tz">Cargando...</div>
+      </div>
+
+      <!-- Timezone config -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow);max-width:600px">
+        <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">🌍 Zona Horaria</div>
+        <div class="fg">
+          <label class="fl">Región / Zona horaria</label>
+          <select class="fs" id="cfg-tz-select" style="max-width:400px">
+            <optgroup label="América del Sur">
+              <option value="America/Santiago">Chile — America/Santiago (CLT/CLST)</option>
+              <option value="America/Argentina/Buenos_Aires">Argentina — Buenos Aires (ART)</option>
+              <option value="America/Sao_Paulo">Brasil — São Paulo (BRT/BRST)</option>
+              <option value="America/Lima">Perú — Lima (PET)</option>
+              <option value="America/Bogota">Colombia — Bogotá (COT)</option>
+              <option value="America/Caracas">Venezuela — Caracas (VET)</option>
+              <option value="America/La_Paz">Bolivia — La Paz (BOT)</option>
+              <option value="America/Asuncion">Paraguay — Asunción (PYT)</option>
+              <option value="America/Montevideo">Uruguay — Montevideo (UYT)</option>
+              <option value="America/Guayaquil">Ecuador — Guayaquil (ECT)</option>
+            </optgroup>
+            <optgroup label="América del Norte">
+              <option value="America/New_York">EE.UU. — Nueva York (EST/EDT)</option>
+              <option value="America/Chicago">EE.UU. — Chicago (CST/CDT)</option>
+              <option value="America/Denver">EE.UU. — Denver (MST/MDT)</option>
+              <option value="America/Los_Angeles">EE.UU. — Los Ángeles (PST/PDT)</option>
+              <option value="America/Mexico_City">México — Ciudad de México (CST/CDT)</option>
+            </optgroup>
+            <optgroup label="Europa">
+              <option value="Europe/Madrid">España — Madrid (CET/CEST)</option>
+              <option value="Europe/London">Reino Unido — Londres (GMT/BST)</option>
+              <option value="Europe/Paris">Francia — París (CET/CEST)</option>
+              <option value="Europe/Berlin">Alemania — Berlín (CET/CEST)</option>
+            </optgroup>
+            <optgroup label="UTC">
+              <option value="UTC">UTC (Tiempo Universal Coordinado)</option>
+            </optgroup>
+          </select>
+          <div class="fhint">Esta zona horaria se usa para registrar las horas de inicio y término de las tareas.</div>
+        </div>
+        <div id="cfg-save-msg" style="display:none;background:#e3fcef;border:1px solid var(--baja);border-radius:var(--radius);padding:9px 12px;font-size:13px;color:#006644;margin-bottom:12px">✓ Zona horaria guardada correctamente</div>
+        <div id="cfg-err-msg" style="display:none;background:var(--alta-bg);border:1px solid var(--alta);border-radius:var(--radius);padding:9px 12px;font-size:13px;color:var(--alta);margin-bottom:12px"></div>
+        <button class="btn btn-primary" onclick="saveConfig()">Guardar cambios</button>
+      </div>
+
+      <!-- Info card -->
+      <div style="background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--radius-lg);padding:16px 20px;max-width:600px">
+        <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:6px">ℹ️ ¿Cómo funciona?</div>
+        <div style="font-size:13px;color:var(--blue-dark);line-height:1.6">
+          La zona horaria configurada aquí determina la hora que se registra cuando una tarea pasa a <strong>En Progreso</strong> (hora de inicio) y cuando pasa a <strong>Completada</strong> (hora de término). También afecta las alertas automáticas del cron de las 8:00 AM. El cambio es inmediato y no requiere reiniciar el servidor.
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -601,6 +670,7 @@ async function startApp(){
     el('audit-delete-sel-btn').classList.remove('hidden');
     el('audit-delete-all-btn').classList.remove('hidden');
     el('select-all-label').classList.remove('hidden');
+    el('nav-config').classList.remove('hidden');
   }
   await loadUsers();
   loadBoard();
@@ -641,6 +711,7 @@ function showPage(page){
   if(page==='charts')   loadCharts();
   if(page==='users')    loadUsersPage();
   if(page==='audit')    loadAudit();
+  if(page==='config')   loadConfig();
 }
 
 // ── Kanban ────────────────────────────────────────────────────────────────────
@@ -1355,6 +1426,49 @@ function renderDurationTable(d){
       <td style="font-size:12px;color:var(--baja);font-weight:500">${fmtTs(t.completed_at)}</td>
       <td><span style="font-size:13px;font-weight:700;color:var(--blue)">${fmtDuration(t.started_at,t.completed_at)}</span></td>
     </tr>`).join('')+'</tbody>';
+}
+
+
+// ── Config ────────────────────────────────────────────────────────────────────
+async function loadConfig() {
+  const data = await apiFetch('/config');
+  if (!data) return;
+  el('cfg-current-time').textContent = data.currentTime || '—';
+  el('cfg-current-tz').textContent = 'Zona horaria: ' + (data.timezone || '—');
+  const sel = el('cfg-tz-select');
+  if (sel) {
+    // Try to select current tz
+    for (let opt of sel.options) {
+      if (opt.value === data.timezone) { sel.value = data.timezone; break; }
+    }
+  }
+  // Refresh clock every second
+  if (window._cfgClockInterval) clearInterval(window._cfgClockInterval);
+  window._cfgClockInterval = setInterval(async () => {
+    if (!document.getElementById('page-config').classList.contains('active')) {
+      clearInterval(window._cfgClockInterval);
+      return;
+    }
+    const d = await apiFetch('/config');
+    if (d) el('cfg-current-time').textContent = d.currentTime || '—';
+  }, 5000);
+}
+
+async function saveConfig() {
+  const timezone = el('cfg-tz-select').value;
+  el('cfg-save-msg').style.display = 'none';
+  el('cfg-err-msg').style.display  = 'none';
+  const data = await apiFetch('/config', { method:'PUT', body:JSON.stringify({ timezone }) });
+  if (!data) return;
+  if (data.error) {
+    el('cfg-err-msg').textContent = data.error;
+    el('cfg-err-msg').style.display = 'block';
+    return;
+  }
+  el('cfg-save-msg').style.display = 'block';
+  el('cfg-current-time').textContent = data.currentTime || '—';
+  el('cfg-current-tz').textContent = 'Zona horaria: ' + (data.timezone || '—');
+  setTimeout(() => { el('cfg-save-msg').style.display = 'none'; }, 3000);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
