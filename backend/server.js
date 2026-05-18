@@ -231,8 +231,17 @@ app.put('/api/tasks/:id', requireNotViewer, (req, res) => {
   const old = db.prepare('SELECT * FROM tasks WHERE id=?').get(req.params.id);
   if (!old) return res.status(404).json({ error: 'Tarea no encontrada' });
   if (req.user.role === 'user' && old.user_id !== req.user.id) return res.status(403).json({ error: 'Sin acceso' });
-  const { name, description, start_date, end_date, start_time, end_time, priority, status } = req.body;
+  const { name, description, start_date, end_date, start_time, end_time, priority, status, completed_at_override } = req.body;
   const newStatus = status ?? old.status;
+
+  // Manual archive: caller passes completed_at_override to force archiving
+  if (completed_at_override) {
+    db.prepare(`UPDATE tasks SET completed_at=?, updated_at=datetime('now') WHERE id=?`)
+      .run(completed_at_override, req.params.id);
+    const updated = db.prepare('SELECT t.*, u.full_name as user_name FROM tasks t JOIN users u ON t.user_id=u.id WHERE t.id=?').get(req.params.id);
+    auditLog(req.user.id, req.params.id, 'ARCHIVE', old, updated, req.ip);
+    return res.json(updated);
+  }
 
   // Auto-stamp timestamps on status transitions
   let started_at  = old.started_at;
