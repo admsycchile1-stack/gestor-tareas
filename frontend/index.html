@@ -726,12 +726,13 @@ async function loadBoard(){
   }else pillsEl.style.display='none';
   const q=activeUserFilter?`?user_id=${activeUserFilter}`:'';
   allTasks=await apiFetch('/tasks'+q)||[];
-  // Board shows: all non-completed tasks + tasks completed TODAY
-  // Tasks completed on a PREVIOUS day are hidden from board (visible in calendar/list)
+  // Board shows: non-completed tasks + tasks completed less than 7 hours ago
   const boardTasks = allTasks.filter(t => {
     if (t.status !== 'completada') return true;
-    if (!t.completed_at) return true; // no timestamp yet, keep visible
-    return t.completed_at.slice(0,10) === todayStr; // only today's completed
+    if (!t.completed_at) return true;
+    const completedMs = new Date(t.completed_at.replace(' ','T')).getTime();
+    const sevenHoursMs = 7 * 60 * 60 * 1000;
+    return (Date.now() - completedMs) < sevenHoursMs;
   });
   checkAlerts();
   renderKanban(boardTasks);
