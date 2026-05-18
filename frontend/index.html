@@ -912,7 +912,7 @@ async function renderAnnualCalendar(){
     el('cal-user-sel').innerHTML=`<option value="">Todos</option>`+allUsers.map(u=>`<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
   }
   const uid=v('cal-user-sel');
-  const tasks=await apiFetch(`/tasks?year=${currentYear}${uid?'&user_id='+uid:''}`)||[];
+  const tasks=await apiFetch(`/tasks?year=${currentYear}&show_archived=1${uid?'&user_id='+uid:''}`)||[];
   const byDate=buildDateIdx(tasks);
   const grid=el('months-grid'); grid.innerHTML='';
   for(let m=0;m<12;m++) grid.appendChild(buildMiniMonth(m,currentYear,byDate));
@@ -964,7 +964,7 @@ async function renderMonthView(){
     el('month-user-sel').innerHTML=`<option value="">Todos</option>`+allUsers.map(u=>`<option value="${u.id}" ${cur==u.id?'selected':''}>${escH(u.full_name)}</option>`).join('');
   }
   const uid=v('month-user-sel');
-  const tasks=await apiFetch(`/tasks?year=${currentYear}${uid?'&user_id='+uid:''}`)||[];
+  const tasks=await apiFetch(`/tasks?year=${currentYear}&show_archived=1${uid?'&user_id='+uid:''}`)||[];
   const byDate=buildDateIdx(tasks);
   let html='';
   DAYS_S.forEach(d=>html+=`<div class="mv-dname">${d}</div>`);
@@ -988,7 +988,7 @@ function changeMonth(d){currentMonth+=d;if(currentMonth<0){currentMonth=11;curre
 async function openDayModal(ds,label){
   selectedDay=ds;
   el('day-modal-title').textContent='📅 '+label;
-  const tasks=await apiFetch('/tasks?date='+ds)||[];
+  const tasks=await apiFetch('/tasks?date='+ds+'&show_archived=1')||[];
   const cont=el('day-modal-tasks');
   if(!tasks.length)cont.innerHTML=`<div style="text-align:center;padding:28px;color:var(--text2)">Sin tareas</div>`;
   else renderSimpleTaskList(cont,tasks);
@@ -1482,14 +1482,12 @@ async function saveConfig() {
 
 // ── Archive ───────────────────────────────────────────────────────────────────
 async function archiveTask(taskId) {
-  // Force completed_at to 8 hours ago so it falls outside the 7h window immediately
-  const eightHoursAgo = new Date(Date.now() - 8*60*60*1000)
-    .toISOString().replace('T',' ').slice(0,19);
-  await apiFetch('/tasks/'+taskId, {
-    method: 'PUT',
-    body: JSON.stringify({ completed_at_override: eightHoursAgo })
-  });
-  loadBoard();
+  const r = await apiFetch('/tasks/'+taskId+'/archive', { method: 'POST' });
+  if (r && !r.error) {
+    loadBoard();
+  } else {
+    console.error('Archive error:', r);
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
