@@ -68,6 +68,7 @@ if (!auditCols.includes('ip'))      db.exec("ALTER TABLE audit_log ADD COLUMN ip
 const taskCols = db.prepare("PRAGMA table_info(tasks)").all().map(c => c.name);
 if (!taskCols.includes('user_id'))     db.exec("ALTER TABLE tasks ADD COLUMN user_id INTEGER");
 if (!taskCols.includes('started_at'))  db.exec("ALTER TABLE tasks ADD COLUMN started_at TEXT");
+if (!taskCols.includes('archived'))    db.exec("ALTER TABLE tasks ADD COLUMN archived INTEGER DEFAULT 0");
 if (!taskCols.includes('completed_at'))db.exec("ALTER TABLE tasks ADD COLUMN completed_at TEXT");
 
 // ─── Default admin ────────────────────────────────────────────────────────────
@@ -185,7 +186,8 @@ app.delete('/api/users/:id', requireAdmin, (req, res) => {
 app.get('/api/tasks', requireAuth, (req, res) => {
   const { date, month, year, status, priority, user_id } = req.query;
   const scopeId = req.user.role === 'user' ? req.user.id : (user_id || null);
-  let q = `SELECT t.*, u.full_name as user_name FROM tasks t JOIN users u ON t.user_id=u.id WHERE 1=1`;
+  const showArchived = req.query.show_archived === '1';
+  let q = `SELECT t.*, u.full_name as user_name FROM tasks t JOIN users u ON t.user_id=u.id WHERE (t.archived IS NULL OR t.archived=0${showArchived ? ' OR t.archived=1' : ''} )`;
   const p = [];
   if (scopeId) { q += ' AND t.user_id=?'; p.push(scopeId); }
   if (date) { q += ' AND (t.start_date<=? AND t.end_date>=?)'; p.push(date, date); }
@@ -317,7 +319,7 @@ app.delete('/api/audit/:id', requireAuth, (req, res) => {
 // ─── Stats ────────────────────────────────────────────────────────────────────
 app.get('/api/stats', requireAuth, (req, res) => {
   const scopeId = req.user.role === 'user' ? req.user.id : null;
-  const where = scopeId ? `WHERE t.user_id=${scopeId}` : '';
+  const where = scopeId ? `WHERE t.user_id=${scopeId}` : '';  // stats include archived tasks
 
   const byStatus   = db.prepare(`SELECT status, COUNT(*) as count FROM tasks t ${where} GROUP BY status`).all();
   const byPriority = db.prepare(`SELECT priority, COUNT(*) as count FROM tasks t ${where} GROUP BY priority`).all();
@@ -447,6 +449,18 @@ app.put('/api/config', requireAuth, (req, res) => {
   process.env.TZ = timezone;
   auditLog(req.user.id, null, 'UPDATE_CONFIG', null, { timezone }, req.ip);
   res.json({ success: true, timezone, currentTime: nowInTz() });
+});
+
+
+// ─── Archive task ─────────────────────────────────────────────────────────────
+app.post('/api/tasks/:id/archive', requireNotViewer, (req, res) => {
+  const task = db.prepare('SELECT * FROM tasks WHERE id=?').get(req.params.id);
+  if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
+  if (req.user.role === 'user' && task.user_id !== req.user.id)
+    return res.status(403).json({ error: 'Sin acceso' });
+  db.prepare("UPDATE tasks SET archived=1, updated_at=datetime('now') WHERE id=?").run(req.params.id);
+  auditLog(req.user.id, req.params.id, 'ARCHIVE', task, { archived: 1 }, req.ip);
+  res.json({ success: true });
 });
 
 // ─── Cron ─────────────────────────────────────────────────────────────────────
